@@ -4,7 +4,7 @@ Order Management Engine in trade life cycle
 
 ## A Simple REST API
 
-The API currently accepts JSON from client. On receiving true JSON, it prints the content of JSON at server side and then sends an JSON acknowldgement 'ack' to client with {'success':'true'}.
+The API currently accepts JSON from client. On receiving true JSON, it prints the content of JSON at server side and then sends a JSON acknowledgement 'ack' to client with {'success':'true'}.
 
 You need to install [Flask](http://flask.pocoo.org/) and [requests](http://docs.python-requests.org/en/master/):
 ```
