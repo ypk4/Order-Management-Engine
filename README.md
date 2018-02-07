@@ -1,5 +1,5 @@
 # Order-Management-Engine
-Order Management Engine in trade life cycle
+Order Management Engine in Trade Life Cycle
 
 
 ## A Simple REST API
