@@ -9,7 +9,7 @@ You need to install [Flask](http://flask.pocoo.org/) and [requests](http://docs.
 $ pip install flask gevent requests
 ```
 
-## Starting the Keras server
+## Starting the Flask server
 ```
 $ python run_keras_server.py 
 ...
