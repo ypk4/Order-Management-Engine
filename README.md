@@ -14,7 +14,7 @@ $ pip install flask gevent requests
 $ python run_keras_server.py 
 ...
  * Running on http://127.0.0.1:5000
-```
+
 
 You can now access the REST API via `http://127.0.0.1:5000`.
 
