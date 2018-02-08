@@ -33,13 +33,13 @@ $ curl  -X POST  -H "Content-Type: application/json"  -d '{"key1":"value1", "key
 
 OR programmatically using python/PHP/any other language
 
-# A Python Driver program - Endpoint to be called by Order entry gateway
+### A Python Driver program - Endpoint to be called by Order entry gateway
 
 ```
 $ python order_request.py
 ```
 
-# A Python Driver program - Endpoint to be called by Execution links
+### A Python Driver program - Endpoint to be called by Execution links
 
 ```
 $ python execution_request.py
