@@ -1,15 +1,17 @@
 # Order-Management-Engine
-Order Management Engine in trade life cycle
+Order Management Engine in Trade Life Cycle
 
 
 ## A Simple REST API
+
+The API currently accepts JSON from client. On receiving true JSON, it prints the content of JSON at server side and then sends a JSON acknowledgement 'ack' to client with {'success':'true'}.
 
 You need to install [Flask](http://flask.pocoo.org/) and [requests](http://docs.python-requests.org/en/master/):
 ```
 $ pip install flask gevent requests
 ```
 
-## Starting the Keras server
+## Starting the Flask server
 ```
 $ python run_keras_server.py 
 ...
@@ -29,7 +31,17 @@ $ curl  -X POST  -H "Content-Type: application/json"  -d '{"key1":"value1", "key
 }
 ```
 
-OR programmatically using python/PHP/any other language:
+OR programmatically using python/PHP/any other language
+
+# A Python Driver program - Endpoint to be called by Order entry gateway
+
 ```
-$ python simple_request.py
+$ python order_request.py
 ```
+
+# A Python Driver program - Endpoint to be called by Execution links
+
+```
+$ python execution_request.py
+```
+
