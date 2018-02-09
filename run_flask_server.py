@@ -4,7 +4,8 @@
 # Submit a request via cURL from different terminal :
 # 	curl  -X POST  -H "Content-Type: application/json"  -d '{"key1":"value1", "key2":"value2"}' 'http://localhost:5000/order_endpoint'   OR
 # Submit a request via separate Python / PHP / other language code from different terminal :
-#	python simple_request.py
+#	python order_request.py
+#	python execution_request.py	
 
 
 # import the necessary packages
@@ -35,7 +36,12 @@ def order_entry():
 			
 			# e.g.- Adding order received from order entry
 			
-			#
+			order_id = content['order_id']
+			user_id = content['user_id']
+			side = content['side']
+			ask_price = content['ask_price']
+			
+			# Write Flask-MongoEngine code to insert above retrieved values OR if we want to directly store JSON, then directly store
 			#
 
 			# indicate that the request was a success
@@ -65,7 +71,13 @@ def execution_links():
 			
 			# e.g.- Storing fill coming from execution links, etc
 			
-			#
+			fill_ids = content['fill_ids']
+			order_id = content['order_id']
+			qtydone = content['qtydone']
+			prices = content['prices']
+			exchange_id = content['exchange_id']
+			
+			# Write Flask-MongoEngine code for insertion into db
 			#
 
 			# indicate that the request was a success

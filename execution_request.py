@@ -11,7 +11,7 @@ import json
 URL_FOR_EXECUTION = "http://localhost:5000/execution_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
-fill_data = {'fill_id': 75, 'data_2': -1, 'data_3': 47, 'data_4': 'SBY'}
+fill_data = {'fill_ids': [75, 89], 'order_id': 124, 'qtydone': [10,20], 'prices': [45, 85], 'exchange_id':6766}
 
 # submit the request
 r = requests.post(URL_FOR_EXECUTION, data = json.dumps(fill_data), headers = headers).json()
