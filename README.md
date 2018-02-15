@@ -45,3 +45,16 @@ $ python order_request.py
 $ python execution_request.py
 ```
 
+
+## Installing MongoDB on Ubuntu :-
+Follow the steps on https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
+It requires 64 bit Ubuntu.
+
+
+## Installing Flask-MongoEngine on Ubuntu :-
+```
+$ pip install flask-mongoengine
+```
+
+https://github.com/MongoEngine/flask-mongoengine
+https://pypi.python.org/pypi/flask-mongoengine
