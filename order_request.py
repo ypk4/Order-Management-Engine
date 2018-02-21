@@ -11,7 +11,8 @@ import json
 URL_FOR_ORDER = "http://localhost:5000/order_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
-order_data = {'order_id': 75, 'user_id': 122, 'side': 0, 'ask_price': '80'}
+order_data = {'type':1, 'order_id': 75, 'user_id': 122, 'side': 0, 'ask_price': '80'}
+# type: 1 - Add new order, 2 - Update price of order, 3 - Update quantity in order
 
 # submit the request
 r = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()

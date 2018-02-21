@@ -49,12 +49,13 @@ $ python execution_request.py
 ## Installing MongoDB on Ubuntu :-
 Follow the steps on https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
 It requires 64 bit Ubuntu.
+This is not required, since MongoDB database is created and running on AWS server
 
 
-## Installing Flask-MongoEngine on Ubuntu :-
+## Installing Flask-PyMongo on Ubuntu :-
 ```
-$ pip install flask-mongoengine
+$ pip install Flask-PyMongo
 ```
 
-https://github.com/MongoEngine/flask-mongoengine
-https://pypi.python.org/pypi/flask-mongoengine
+https://flask-pymongo.readthedocs.io/en/latest/
+https://pypi.python.org/pypi/Flask-PyMongo
