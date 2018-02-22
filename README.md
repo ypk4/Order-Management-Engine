@@ -13,7 +13,7 @@ $ pip install flask gevent requests
 
 ## Starting the Flask server
 ```
-$ python run_keras_server.py 
+$ python run_flask_server.py 
 ...
  * Running on http://127.0.0.1:5000
 ```
