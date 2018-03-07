@@ -11,7 +11,9 @@ import json
 URL_FOR_ORDER = "http://localhost:5000/order_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
-order_data = {'type':1, 'order_id': 75, 'user_id': 122, 'side': 0, 'ask_price': '80'}
+
+
+order_data = {'type': 1, 'order_id': 75, 'user_id': 122, 'product_id' : 312, 'side': 0, 'ask_price': 80, 'total_qty' : 30}
 # type: 1 - Add new order, 2 - Update price of order, 3 - Update quantity in order
 
 # submit the request
@@ -24,3 +26,35 @@ if r["success"]:
 # otherwise, the request failed
 else:
 	print ("Request failed")
+	
+	
+	
+order_data = {'type': 2, 'order_id': 75, 'ask_price': 85}
+# type: 1 - Add new order, 2 - Update price of order, 3 - Update quantity in order
+
+# submit the request
+r = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
+
+# ensure the request was sucessful
+if r["success"]:
+	print ('Request succeeded')
+	
+# otherwise, the request failed
+else:
+	print ("Request failed")
+	
+	
+
+order_data = {'type': 3, 'order_id': 75, 'total_qty': 26}
+# type: 1 - Add new order, 2 - Update price of order, 3 - Update quantity in order
+
+# submit the request
+r = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
+
+# ensure the request was sucessful
+if r["success"]:
+	print ('Request succeeded')
+	
+# otherwise, the request failed
+else:
+	print ("Request failed")	
