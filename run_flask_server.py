@@ -18,6 +18,7 @@ def order_entry():
 	mongo_order = mongo.db.orders
 	# initialize the ack dictionary that will be returned from the view
 	ack = {"success": False}
+	
 	if flask.request.method == "POST":
 		#print request.data
 		if flask.request.is_json:
@@ -26,8 +27,7 @@ def order_entry():
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
 			
-			if content['type'] == 1:				# Add new order
-				# code for inserting order
+			if content['type'] == 1:				# Insert new order
 				order_id = content['order_id']
 				user_id = content['user_id']
 				product_id = content['product_id']
@@ -38,19 +38,119 @@ def order_entry():
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				mongo_order.insert({'order_id' : order_id, 'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'order_stamp' : order_stamp, 'state' : 'live'})
+				mongo_order.insert({'order_id' : order_id, 'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'order_stamp' : order_stamp, 'state' : 1})
+				
+				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected)
 				
 				ack["success"] = True
 				
 
 			elif content['type'] == 2:				# Update price of order
-				# code for updating price
-				pass
+				order_id = content['order_id']
+				ask_price = content['ask_price']
 				
+				ts = time.time()
+				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+				
+				existing = mongo_order.find_one({'order_id' : order_id})
+				print '<', existing, '>'
 			
+				old_price = existing['ask_price']
+				old_qty = existing['total_qty']
+				old_stamp = existing['order_stamp']
+				old_state = existing['state']
+			
+				old_values = { 'ask_price': old_price, 'total_qty': old_qty, 'order_stamp': old_stamp, 'state': old_state }
+			
+				history = []
+			
+				if 'history' not in existing:				# Create history list and add old values
+					history.append(old_values)
+				
+				else:							# Append old values to history list	
+					history = existing['history']
+					history.append(old_values)
+
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'ask_price': ask_price} }, upsert=False)
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
+				
+				
+				#To print contents of 'order' collection :-
+				'''results = mongo_order.find()
+				print 'BELOW\n'
+				for res in results:
+					print res
+				'''
+				
+				ack["success"] = True
+								
+							
 			elif content['type'] == 3:				# Update quantity in order
-				# code for updating quantity
-				pass
+				order_id = content['order_id']
+				total_qty = content['total_qty']
+				
+				ts = time.time()
+				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+				
+				existing = mongo_order.find_one({'order_id' : order_id})
+				print '<', existing, '>'
+					
+				old_price = existing['ask_price']
+				old_qty = existing['total_qty']
+				old_stamp = existing['order_stamp']
+				old_state = existing['state']
+			
+				old_values = { 'ask_price': old_price, 'total_qty': old_qty, 'order_stamp': old_stamp, 'state': old_state }
+				
+				history = []
+			
+				if 'history' not in existing:				# Create history list and add old values
+					history.append(old_values)
+				
+				else:							# Append old values to history list	
+					history = existing['history']
+					history.append(old_values)
+
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'total_qty': total_qty} }, upsert=False)
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
+				
+				ack["success"] = True
+
+
+			elif content['type'] == 4:				# Cancel order
+				order_id = content['order_id']
+				reason_cancellation = content['reason_cancellation']
+				
+				ts = time.time()
+				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+				
+				existing = mongo_order.find_one({'order_id' : order_id})
+				print '<', existing, '>'
+				
+				old_price = existing['ask_price']
+				old_qty = existing['total_qty']
+				old_stamp = existing['order_stamp']
+				old_state = existing['state']
+			
+				old_values = { 'ask_price': old_price, 'total_qty': old_qty, 'order_stamp': old_stamp, 'state': old_state }
+					
+				history = []
+			
+				if 'history' not in existing:				# Create history list and add old values
+					history.append(old_values)
+				
+				else:							# Append old values to history list	
+					history = existing['history']
+					history.append(old_values)
+
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'state': 3} }, upsert=False)
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
+					
+				ack["success"] = True
+				
 
 	# return the data dictionary as a JSON response
 	return flask.jsonify(ack)
@@ -65,6 +165,7 @@ def execution_links():
 	# initialize the ack dictionary that will be returned from the view
 	ack = {"success": False}
 	mongo_fill = mongo.db.fills
+	
 	if flask.request.method == "POST":
 		#print request.data
 		if flask.request.is_json:
@@ -91,7 +192,7 @@ def execution_links():
 			existing = mongo_fill.find_one({'order_id' : order_id})
 			print '<', existing, '>'
 			
-			if existing == None:		# If fills for this order_id do not exist, create list of fills
+			if existing == None:		# If fills for this order_id do not exist, create new json with list of fills
 				mongo_fill.insert({ 'order_id' : order_id, 'fills' : [fill] })
 				
 			else:				# If fills for this order_id already exist, then append the new fill to list

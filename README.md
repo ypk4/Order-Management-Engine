@@ -8,7 +8,11 @@ The API currently accepts JSON from client. On receiving true JSON, it prints th
 
 In recent commits, code for order/fill insertion and updation is added. Now, whenever JSON order/fill is sent, it is added/updated in the MongoDB database which is set up on an AWS machine.
 
-Code for storing user subscriptions to particular orders and handling notifications is yet to be done.
+Following functionalities have been implemented :-
+From Order entry gateway :- Add new order, Update price of order, Update quantity of order, Cancel an order;
+From Execution links :- Add new fill
+
+Functionalities like storing user subscriptions to particular orders in cache and handling notifications are yet to be implemented.
 
 
 You need to install [Flask](http://flask.pocoo.org/) and [requests](http://docs.python-requests.org/en/master/):
