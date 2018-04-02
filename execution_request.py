@@ -11,7 +11,9 @@ import json
 URL_FOR_EXECUTION = "http://localhost:5000/execution_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
-fill_data = {'fill_ids': [75, 89], 'order_id': 124, 'qtydone': [10,20], 'prices': [45, 85], 'exchange_id':6766}
+#fill_data = {'order_id': 124, 'fill_ids': [75, 89], 'qtydone': [10, 20], 'prices': [45, 85], 'exchange_id' : 6766}
+#fill_data = { 'order_id': 125,  'fills': [ { 'fill_id': 75, 'qtydone': 10, 'price': 45, 'exchange_id': 6766 }, { 'fill_id': 89, 'qtydone': 20, 'price': 85, 'exchange_id': 6766 } ] }
+fill_data = { 'order_id': 125,  'fill': { 'fill_id': 99, 'qtydone': 20, 'price': 65, 'exchange_id': 6766 } }
 
 # submit the request
 r = requests.post(URL_FOR_EXECUTION, data = json.dumps(fill_data), headers = headers).json()

@@ -6,6 +6,15 @@ Order Management Engine in Trade Life Cycle
 
 The API currently accepts JSON from client. On receiving true JSON, it prints the content of JSON at server side and then sends a JSON acknowledgement 'ack' to client with {'success':'true'}.
 
+In recent commits, code for order/fill insertion and updation is added. Now, whenever JSON order/fill is sent, it is added/updated in the MongoDB database which is set up on an AWS machine.
+
+Following functionalities have been implemented :-
+From Order entry gateway :- Add new order, Update price of order, Update quantity of order, Cancel an order;
+From Execution links :- Add new fill
+
+Functionalities like storing user subscriptions to particular orders in cache and handling notifications are yet to be implemented.
+
+
 You need to install [Flask](http://flask.pocoo.org/) and [requests](http://docs.python-requests.org/en/master/):
 ```
 $ pip install flask gevent requests
