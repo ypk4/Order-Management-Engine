@@ -4,11 +4,48 @@ from flask_pymongo import PyMongo
 import time
 import datetime
 
+import requests
+import json
+
 app = flask.Flask(__name__)
 app.config['MONGO_DBNAME'] = 'order_entry'
 app.config['MONGO_URI'] = 'mongodb://admin:thisisyouradmin@ds141068.mlab.com:41068/order_entry'
 
 mongo = PyMongo(app)
+
+
+
+
+
+def send_to_exec_link(new_order, content_type):								## send to execution link
+	# initialize the REST API endpoint URL
+	URL_FOR_ORDER = "http://localhost:5001/execution_REST_API_dummy"
+	headers = {'Content-Type' : 'application/json'}
+
+
+
+	order_data = {'order_id': new_order['order_id'], 'user_id': new_order['user_id'], 
+				'product_id' : new_order['product_id'], 'side': new_order['side'], 
+				'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
+				'order_stamp' : new_order['order_stamp'], 'state' : new_order['state'] }
+
+	# submit the request
+	r = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
+
+	# ensure the request was sucessful
+	if r["success"]:
+		print ('Request succeeded')
+		
+	# otherwise, the request failed
+	else:
+		print ("Request failed")
+
+
+
+
+
+
+
 
 # Following endpoint corresponds to order_entry() function defined below it.
 # It can be called by client on 'http://localhost:5000/order_endpoint' url.
@@ -26,6 +63,8 @@ def order_entry():
 			print content
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
+
+			order_id_send = content['order_id']							## to be used for sending
 			
 			if content['type'] == 1:				# Insert new order
 				order_id = content['order_id']
@@ -43,6 +82,8 @@ def order_entry():
 				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected)
 				
 				ack["success"] = True
+
+
 				
 
 			elif content['type'] == 2:				# Update price of order
@@ -73,8 +114,9 @@ def order_entry():
 
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'ask_price': ask_price} }, upsert=False)
-				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
-				
+				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)				
+
+
 				
 				#To print contents of 'order' collection :-
 				'''results = mongo_order.find()
@@ -150,6 +192,10 @@ def order_entry():
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
 					
 				ack["success"] = True
+
+
+			new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
+			send_to_exec_link(new_order, content['type'])						##content type added if partial data is to be sent
 				
 
 	# return the data dictionary as a JSON response
@@ -210,3 +256,5 @@ if __name__ == "__main__":
 	print(("* Flask starting server..."
 		"Please wait until server has fully started"))
 	app.run(debug=True)
+
+
