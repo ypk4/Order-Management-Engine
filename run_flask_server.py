@@ -24,7 +24,7 @@ def send_to_exec_link(new_order, content_type):								## send to execution link
 
 
 
-	order_data = {'order_id': new_order['order_id'], 'user_id': new_order['user_id'], 
+	order_data = {'type': content_type, 'order_id': new_order['order_id'], 'user_id': new_order['user_id'], 
 				'product_id' : new_order['product_id'], 'side': new_order['side'], 
 				'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
 				'order_stamp' : new_order['order_stamp'], 'state' : new_order['state'] }
@@ -41,8 +41,29 @@ def send_to_exec_link(new_order, content_type):								## send to execution link
 		print ("Request failed")
 
 
+def send_to_trade_post(order, fill, fill_list):				## send to trade post
+	# initialize the REST API endpoint URL
+	URL_FOR_ORDER_FILL = "http://localhost:5002/trade_post_REST_API_dummy"
+	headers = {'Content-Type' : 'application/json'}
 
 
+
+	order_fill_data = {'order_id': order['order_id'], 'user_id': order['user_id'], 
+				'product_id' : order['product_id'], 'side': order['side'], 
+				'ask_price': order['ask_price'], 'total_qty' : order['total_qty'], 
+				'order_stamp' : order['order_stamp'], 'state' : order['state'],
+				'fill' : fill }
+
+	# submit the request
+	r = requests.post(URL_FOR_ORDER_FILL, data = json.dumps(order_fill_data), headers = headers).json()
+
+	# ensure the request was sucessful
+	if r["success"]:
+		print ('Request succeeded')
+		
+	# otherwise, the request failed
+	else:
+		print ("Request failed")
 
 
 
@@ -64,7 +85,7 @@ def order_entry():
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
 
-			order_id_send = content['order_id']							## to be used for sending
+			#order_id_send = content['order_id']							## to be used for sending
 			
 			if content['type'] == 1:				# Insert new order
 				order_id = content['order_id']
@@ -82,6 +103,9 @@ def order_entry():
 				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected)
 				
 				ack["success"] = True
+
+
+				order_id_send = order_id 						##
 
 
 				
@@ -126,6 +150,9 @@ def order_entry():
 				'''
 				
 				ack["success"] = True
+
+				order_id_send = order_id 						##
+
 								
 							
 			elif content['type'] == 3:				# Update quantity in order
@@ -161,6 +188,10 @@ def order_entry():
 				ack["success"] = True
 
 
+				order_id_send = order_id 						##
+
+
+
 			elif content['type'] == 4:				# Cancel order
 				order_id = content['order_id']
 				reason_cancellation = content['reason_cancellation']
@@ -193,6 +224,8 @@ def order_entry():
 					
 				ack["success"] = True
 
+				order_id_send = order_id 						##
+
 
 			new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
 			send_to_exec_link(new_order, content['type'])						##content type added if partial data is to be sent
@@ -211,6 +244,7 @@ def execution_links():
 	# initialize the ack dictionary that will be returned from the view
 	ack = {"success": False}
 	mongo_fill = mongo.db.fills
+	mongo_order = mongo.db.orders 								##
 	
 	if flask.request.method == "POST":
 		#print request.data
@@ -229,6 +263,7 @@ def execution_links():
 			fill['exchange_stamp'] = exchange_stamp
 			print fill
 			
+
 			'''qtydone = content['qtydone']
 			prices = content['prices']
 			exchange_id = content['exchange_id']
@@ -248,6 +283,12 @@ def execution_links():
 			
 			# indicate that the request was a success
 			ack["success"] = True
+
+
+			order_send = mongo_order.find_one({'order_id' : order_id})    ##
+			fill_list_send = mongo_fill.find_one({'order_id' : order_id})		##		
+			send_to_trade_post(order_send, fill, fill_list_send)				## send to trade post
+
 	return flask.jsonify(ack)
 
 
