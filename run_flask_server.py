@@ -118,7 +118,7 @@ def order_entry():
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
 				existing = mongo_order.find_one({'order_id' : order_id})
-				print '<', existing, '>'
+				print '< existing ', existing, ' >'
 			
 				old_price = existing['ask_price']
 				old_qty = existing['total_qty']
@@ -131,10 +131,14 @@ def order_entry():
 			
 				if 'history' not in existing:				# Create history list and add old values
 					history.append(old_values)
+					print 'here'
 				
 				else:							# Append old values to history list	
 					history = existing['history']
 					history.append(old_values)
+					print 'there'
+					
+				print 'history ', history
 
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'ask_price': ask_price} }, upsert=False)
@@ -176,10 +180,14 @@ def order_entry():
 			
 				if 'history' not in existing:				# Create history list and add old values
 					history.append(old_values)
+					print 'no history'
 				
 				else:							# Append old values to history list	
 					history = existing['history']
 					history.append(old_values)
+					print 'history there'
+					
+				print history
 
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'total_qty': total_qty} }, upsert=False)
@@ -263,6 +271,7 @@ def execution_links():
 			fill['exchange_stamp'] = exchange_stamp
 			print fill
 			
+			LTP = fill['price']		# Latest traded price	
 
 			'''qtydone = content['qtydone']
 			prices = content['prices']
@@ -280,6 +289,8 @@ def execution_links():
 				existing_fills = existing['fills']
 				existing_fills.append(fill)
 				mongo_fill.update_one( {'order_id': order_id}, {'$set': {'fills': existing_fills} }, upsert=False)
+			
+			mongo_order.update_one( {'order_id': order_id}, {'$set': {'LTP': LTP} }, upsert=False)
 			
 			# indicate that the request was a success
 			ack["success"] = True
