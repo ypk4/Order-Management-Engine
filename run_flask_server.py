@@ -98,7 +98,7 @@ def order_entry():
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				mongo_order.insert({'order_id' : order_id, 'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'order_stamp' : order_stamp, 'state' : 1})
+				mongo_order.insert({'order_id' : order_id, 'LTP' : -1, 'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'order_stamp' : order_stamp, 'state' : 1})
 				
 				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected)
 				
@@ -143,7 +143,6 @@ def order_entry():
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'ask_price': ask_price} }, upsert=False)
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)				
-
 
 				
 				#To print contents of 'order' collection :-
