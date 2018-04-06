@@ -15,8 +15,6 @@ mongo = PyMongo(app)
 
 
 
-
-
 def send_to_exec_link(new_order, content_type):								## send to execution link
 	# initialize the REST API endpoint URL
 	URL_FOR_ORDER = "http://localhost:5001/execution_REST_API_dummy"
@@ -46,8 +44,6 @@ def send_to_trade_post(order, fill, fill_list):				## send to trade post
 	URL_FOR_ORDER_FILL = "http://localhost:5002/trade_post_REST_API_dummy"
 	headers = {'Content-Type' : 'application/json'}
 
-
-
 	order_fill_data = {'order_id': order['order_id'], 'user_id': order['user_id'], 
 				'product_id' : order['product_id'], 'side': order['side'], 
 				'ask_price': order['ask_price'], 'total_qty' : order['total_qty'], 
@@ -74,8 +70,7 @@ def send_to_trade_post(order, fill, fill_list):				## send to trade post
 @app.route("/order_endpoint", methods=["POST"])
 def order_entry():
 	mongo_order = mongo.db.orders
-	# initialize the ack dictionary that will be returned from the view
-	ack = {"success": False}
+	mongo_fill = mongo.db.fills
 	
 	if flask.request.method == "POST":
 		#print request.data
@@ -85,9 +80,10 @@ def order_entry():
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
 
-			#order_id_send = content['order_id']							## to be used for sending
-			
+
 			if content['type'] == 1:				# Insert new order
+				ack = {"success": False}
+			
 				order_id = content['order_id']
 				user_id = content['user_id']
 				product_id = content['product_id']
@@ -98,19 +94,20 @@ def order_entry():
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				mongo_order.insert({'order_id' : order_id, 'LTP' : -1, 'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'order_stamp' : order_stamp, 'state' : 1})
+				mongo_order.insert({'order_id' : order_id, 'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 1})
 				
 				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected)
 				
 				ack["success"] = True
 
-
-				order_id_send = order_id 						##
-
-
+				new_order = mongo_order.find_one({'order_id' : order_id})		## new/updated/canceled order
+				send_to_exec_link(new_order, content['type'])
+				
 				
 
 			elif content['type'] == 2:				# Update price of order
+				ack = {"success": False}
+				
 				order_id = content['order_id']
 				ask_price = content['ask_price']
 				
@@ -143,7 +140,6 @@ def order_entry():
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'history': history} }, upsert=False)
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'ask_price': ask_price} }, upsert=False)
 				mongo_order.update_one({'order_id': order_id}, {'$set': {'order_stamp': order_stamp} }, upsert=False)				
-
 				
 				#To print contents of 'order' collection :-
 				'''results = mongo_order.find()
@@ -154,11 +150,14 @@ def order_entry():
 				
 				ack["success"] = True
 
-				order_id_send = order_id 						##
-
+				new_order = mongo_order.find_one({'order_id' : order_id})		## new/updated/canceled order
+				send_to_exec_link(new_order, content['type'])
+				
 								
 							
 			elif content['type'] == 3:				# Update quantity in order
+				ack = {"success": False}
+				
 				order_id = content['order_id']
 				total_qty = content['total_qty']
 				
@@ -194,12 +193,14 @@ def order_entry():
 				
 				ack["success"] = True
 
-
-				order_id_send = order_id 						##
-
+				new_order = mongo_order.find_one({'order_id' : order_id})		## new/updated/canceled order
+				send_to_exec_link(new_order, content['type'])
+				
 
 
 			elif content['type'] == 4:				# Cancel order
+				ack = {"success": False}
+				
 				order_id = content['order_id']
 				reason_cancellation = content['reason_cancellation']
 				
@@ -231,12 +232,59 @@ def order_entry():
 					
 				ack["success"] = True
 
-				order_id_send = order_id 						##
+				new_order = mongo_order.find_one({'order_id' : order_id})		## new/updated/canceled order
+				send_to_exec_link(new_order, content['type'])
 
 
-			new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
-			send_to_exec_link(new_order, content['type'])						##content type added if partial data is to be sent
+
+			elif content['type'] == 5:				# get order details
+				user_id = content['user_id']
+			
+				orders = []
+				order_data = mongo_order.find({'user_id' : user_id})
 				
+				for order in order_data:
+					tmp_order = {}
+					tmp_order['order_id'] = order['order_id']
+					tmp_order['product_id'] = order['product_id']
+					tmp_order['side'] = order['side']
+					tmp_order['ask_price'] = order['ask_price']
+					tmp_order['total_qty'] = order['total_qty']
+					tmp_order['order_stamp'] = order['order_stamp']
+					tmp_order['state'] = order['state']
+					tmp_order['LTP'] = order['LTP']
+					#tmp_order['product_type'] = ''
+					#tmp_order['product_symbol'] = ''
+					tmp_order['reason_cancellation'] = ''
+
+					tmp_order['fills'] = []
+					print order['order_id']
+					fill_data = mongo_fill.find({'order_id' : order['order_id']})
+					
+					fill_list = []
+				
+					for record in fill_data:
+						fill_list = record['fills']
+						break
+
+					for fill in fill_list: 
+						tmp_fill = {}
+						tmp_fill['fill_id'] = fill['fill_id']
+						tmp_fill['qtydone'] = fill['qtydone']
+						tmp_fill['price'] = fill['price']
+						tmp_fill['exchange_id'] = fill['exchange_id']
+						tmp_fill['exchange_stamp'] = fill['exchange_stamp']
+						#tmp_fill['exchange_name'] = ''
+
+						tmp_order['fills'].append(tmp_fill)
+
+					orders.append(tmp_order)
+
+				ack = {'user_id' : user_id, 'orders' : orders}
+				print(json.dumps(ack, sort_keys=True, indent=4))
+
+			#new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
+			#send_to_exec_link(new_order, content['type'])				
 
 	# return the data dictionary as a JSON response
 	return flask.jsonify(ack)
