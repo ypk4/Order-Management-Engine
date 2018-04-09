@@ -239,28 +239,45 @@ def order_entry():
 
 			elif content['type'] == 5:				# get order details
 				user_id = content['user_id']
-			
+
 				orders = []
 				order_data = mongo_order.find({'user_id' : user_id})
+
+				order_columns = ["Side", "State", "Symbol", "Client", "Size", "QtyDone", "QtyOpen", "OrderId",
+								"PriceInstruction", "Exchange", "OrderStamp", "ProductType", "Ask", "Bid",
+								"LTP", "fill_columns"]
+
+				fill_columns = ["OrderId", "QtyDone", "Exchange", "Stamp", "Price", "FillId"]
+
+				data = []
 				
 				for order in order_data:
-					tmp_order = {}
-					tmp_order['order_id'] = order['order_id']
-					tmp_order['product_id'] = order['product_id']
-					tmp_order['side'] = order['side']
-					tmp_order['ask_price'] = order['ask_price']
-					tmp_order['total_qty'] = order['total_qty']
-					tmp_order['order_stamp'] = order['order_stamp']
-					tmp_order['state'] = order['state']
-					tmp_order['LTP'] = order['LTP']
-					#tmp_order['product_type'] = ''
-					#tmp_order['product_symbol'] = ''
-					tmp_order['reason_cancellation'] = ''
+					tmp_order = []
+					tmp_order.append(order['side'])
+					tmp_order.append(order['state'])
+					#tmp_order.append('symbol')
+					#tmp_order.append('Client')
+					#tmp_order.append(Size)
+					#tmp_order.append(QtyDone)
+					#tmp_order.append(QtyOpen)
 
-					tmp_order['fills'] = []
-					print order['order_id']
+					#tmp_order['total_qty'] = order['total_qty']
+
+					tmp_order.append(order['order_id'])
+					#tmp_order.append("PriceInstruction")
+					#tmp_order.append("Exchange")
+					tmp_order.append(order['order_stamp'])
+					#tmp_order.append('ProductType')
+					tmp_order.append(order['ask_price'])
+					#tmp_order.append(Bid)
+					tmp_order.append(order['LTP'])
+
+										#tmp_order['product_id'] = order['product_id']
+										#tmp_order['reason_cancellation'] = ''
+
+
 					fill_data = mongo_fill.find({'order_id' : order['order_id']})
-					
+					fills = []
 					fill_list = []
 				
 					for record in fill_data:
@@ -268,19 +285,22 @@ def order_entry():
 						break
 
 					for fill in fill_list: 
-						tmp_fill = {}
-						tmp_fill['fill_id'] = fill['fill_id']
-						tmp_fill['qtydone'] = fill['qtydone']
-						tmp_fill['price'] = fill['price']
-						tmp_fill['exchange_id'] = fill['exchange_id']
-						tmp_fill['exchange_stamp'] = fill['exchange_stamp']
-						#tmp_fill['exchange_name'] = ''
+						tmp_fill = []
+						tmp_fill.append(order['order_id'])
+						tmp_fill.append(fill['qtydone'])
+						#tmp_fill.append('Exchange')
+						tmp_fill.append(fill['exchange_stamp'])
+						tmp_fill.append(fill['price'])
+						tmp_fill.append(fill['fill_id'])
+										#tmp_fill['exchange_id'] = fill['exchange_id']
 
-						tmp_order['fills'].append(tmp_fill)
+						fills.append(tmp_fill)
 
-					orders.append(tmp_order)
+					tmp_order.append(fills)
 
-				ack = {'user_id' : user_id, 'orders' : orders}
+					data.append(tmp_order)
+
+				ack = {'order_columns' : order_columns, 'fill_columns' : fill_columns, 'data' : data}
 				print(json.dumps(ack, sort_keys=True, indent=4))
 
 			#new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
