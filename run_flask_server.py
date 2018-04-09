@@ -245,39 +245,39 @@ def order_entry():
 
 				order_columns = ["Side", "State", "Symbol", "Client", "Size", "QtyDone", "QtyOpen", "OrderId",
 								"PriceInstruction", "Exchange", "OrderStamp", "ProductType", "Ask", "Bid",
-								"LTP", "fill_columns"]
+								"LTP", "Fills"]
 
 				fill_columns = ["OrderId", "QtyDone", "Exchange", "Stamp", "Price", "FillId"]
 
 				data = []
-				
+				i = 0
 				for order in order_data:
-					tmp_order = []
-					tmp_order.append(order['side'])
-					tmp_order.append(order['state'])
-					#tmp_order.append('symbol')
-					#tmp_order.append('Client')
-					#tmp_order.append(Size)
-					#tmp_order.append(QtyDone)
-					#tmp_order.append(QtyOpen)
+					order_table = []
+					order_table.append(order['side'])
+					order_table.append(order['state'])
+					#order_table.append('symbol')
+					#order_table.append('Client')
+					#order_table.append(Size)
+					#order_table.append(QtyDone)
+					#order_table.append(QtyOpen)
 
-					#tmp_order['total_qty'] = order['total_qty']
+					#order_table['total_qty'] = order['total_qty']
 
-					tmp_order.append(order['order_id'])
-					#tmp_order.append("PriceInstruction")
-					#tmp_order.append("Exchange")
-					tmp_order.append(order['order_stamp'])
-					#tmp_order.append('ProductType')
-					tmp_order.append(order['ask_price'])
-					#tmp_order.append(Bid)
-					tmp_order.append(order['LTP'])
+					order_table.append(order['order_id'])
+					#order_table.append("PriceInstruction")
+					#order_table.append("Exchange")
+					order_table.append(order['order_stamp'])
+					#order_table.append('ProductType')
+					order_table.append(order['ask_price'])
+					#order_table.append(Bid)
+					order_table.append(order['LTP'])
 
-										#tmp_order['product_id'] = order['product_id']
-										#tmp_order['reason_cancellation'] = ''
+										#order_table['product_id'] = order['product_id']
+										#order_table['reason_cancellation'] = ''
 
 
 					fill_data = mongo_fill.find({'order_id' : order['order_id']})
-					fills = []
+					fill_table= []
 					fill_list = []
 				
 					for record in fill_data:
@@ -294,13 +294,15 @@ def order_entry():
 						tmp_fill.append(fill['fill_id'])
 										#tmp_fill['exchange_id'] = fill['exchange_id']
 
-						fills.append(tmp_fill)
+						fill_table.append(tmp_fill)
 
-					tmp_order.append(fills)
+					#order_table.append(fills)
 
-					data.append(tmp_order)
+					data.append({'order_table' : order_table, 'fill_table' : fill_table, 'id' : i})
+					i = i + 1
 
-				ack = {'order_columns' : order_columns, 'fill_columns' : fill_columns, 'data' : data}
+				Orders = {'order_columns' : order_columns, 'fill_columns' : fill_columns, 'data' : data}
+				ack = {'Orders' : Orders}
 				print(json.dumps(ack, sort_keys=True, indent=4))
 
 			#new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
