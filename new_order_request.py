@@ -12,15 +12,16 @@ URL_FOR_ORDER = "http://localhost:5000/order_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
 
-order_data = {'type': 1, 'order_id': 1248, 'user_id': 348, 'product_id' : 312, 'side': 0, 'ask_price': 80, 'total_qty' : 30}
+order_data = {'type': 1, 'user_id': 3408, 'product_id' : 302, 'side': 1, 'ask_price': 70, 'total_qty' : 40}
 # type: 1 - Add new order, 2 - Update price of order, 3 - Update quantity in order, 4 - Cancel order
 
 # submit the request
-r = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
+ack = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
 
 # ensure the request was sucessful
-if r["success"]:
+if ack["success"]:
 	print ('Request succeeded')
+	print ack
 	
 # otherwise, the request failed
 else:
