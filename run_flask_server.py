@@ -109,13 +109,14 @@ def order_entry():
 				
 				
 
-			elif content['type'] == 2:				# Update price of order
+			elif content['type'] == 2:				# Update price & quantity of order
 				ack = {"success": False}
 				
 				order_id = content['order_id']
 				objId = ObjectId(order_id)
 			
 				ask_price = content['ask_price']
+				total_qty = content['total_qty']
 				
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -145,6 +146,7 @@ def order_entry():
 
 				mongo_order.update_one({'_id': objId}, {'$set': {'history': history} }, upsert=False)
 				mongo_order.update_one({'_id': objId}, {'$set': {'ask_price': ask_price} }, upsert=False)
+				mongo_order.update_one({'_id': objId}, {'$set': {'total_qty': total_qty} }, upsert=False)
 				mongo_order.update_one({'_id': objId}, {'$set': {'order_stamp': order_stamp} }, upsert=False)	
 				
 				#To print contents of 'order' collection :-
@@ -160,53 +162,8 @@ def order_entry():
 				send_to_exec_link(new_order, content['type'])
 				
 								
-							
-			elif content['type'] == 3:				# Update quantity in order
-				ack = {"success": False}
-				
-				order_id = content['order_id']
-				objId = ObjectId(order_id)
-				
-				total_qty = content['total_qty']
-				
-				ts = time.time()
-				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-				
-				existing = mongo_order.find_one({'_id' : objId})
-				print '<', existing, '>'
-					
-				old_price = existing['ask_price']
-				old_qty = existing['total_qty']
-				old_stamp = existing['order_stamp']
-				old_state = existing['state']
-			
-				old_values = { 'ask_price': old_price, 'total_qty': old_qty, 'order_stamp': old_stamp, 'state': old_state }
-				
-				history = []
-			
-				if 'history' not in existing:				# Create history list and add old values
-					history.append(old_values)
-					print 'no history'
-				
-				else:							# Append old values to history list	
-					history = existing['history']
-					history.append(old_values)
-					print 'history there'
-					
-				print history
 
-				mongo_order.update_one({'_id': objId}, {'$set': {'history': history} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'total_qty': total_qty} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
-				
-				ack["success"] = True
-
-				new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
-				send_to_exec_link(new_order, content['type'])
-				
-
-
-			elif content['type'] == 4:				# Cancel order
+			elif content['type'] == 3:				# Cancel order
 				ack = {"success": False}
 				
 				order_id = content['order_id']
@@ -248,7 +205,7 @@ def order_entry():
 
 
 
-			elif content['type'] == 5:				# get order details
+			elif content['type'] == 4:				# get order details
 				user_id = content['user_id']
 
 				orders = []

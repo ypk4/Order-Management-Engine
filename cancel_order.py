@@ -9,8 +9,8 @@ URL_FOR_ORDER = "http://localhost:5000/order_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
 	
-order_data = {'type': 4, 'order_id': '5ad1a744381adc170ce0277b', 'reason_cancellation': 'Unable to get desired price'}
-# type: 1 - Add new order, 2 - Update price of order, 3 - Update quantity in order, 4 - Cancel order
+order_data = {'type': 3, 'order_id': '5ad1a744381adc170ce0277b', 'reason_cancellation': 'Unable to get desired price'}
+# type: 1 - Add new order, 2 - Update price/qty of order, 3 - Cancel order, 4 - Get user's order details
 
 # submit the request
 r = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()

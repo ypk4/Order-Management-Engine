@@ -13,7 +13,7 @@ headers = {'Content-Type' : 'application/json'}
 
 
 order_data = {'type': 1, 'user_id': 3408, 'product_id' : 302, 'side': 1, 'ask_price': 70, 'total_qty' : 40}
-# type: 1 - Add new order, 2 - Update price of order, 3 - Update quantity in order, 4 - Cancel order
+# type: 1 - Add new order, 2 - Update price/qty of order, 3 - Cancel order, 4 - Get user's order details
 
 # submit the request
 ack = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
