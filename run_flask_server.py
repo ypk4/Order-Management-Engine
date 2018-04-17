@@ -72,6 +72,7 @@ def order_entry():
 	mongo_order = mongo.db.orders
 	mongo_fill = mongo.db.fills
 	mongo_exchange = mongo.db.exchange
+	mongo_product = mongo.db.product
 	
 	if flask.request.method == "POST":
 		#print request.data
@@ -94,7 +95,7 @@ def order_entry():
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				order_id = mongo_order.insert({'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 1})
+				order_id = mongo_order.insert({'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 1})
 				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected)
 				# order_id returned is of the type "ObjectId"
 				
@@ -223,11 +224,13 @@ def order_entry():
 					order_table = []
 					order_table.append(order['side'])
 					order_table.append(order['state'])
-					#order_table.append('symbol')
+					order_table.append(order['product_id'])		# product_id = product_symbol
 					#order_table.append('Client')
+					
 					order_table.append(order['total_qty'])
-					#order_table.append(QtyDone)
-					#order_table.append(QtyOpen)
+					order_table.append(order['order_qtydone'])
+					qtyopen = order['total_qty'] - order['order_qtydone']
+					order_table.append(qtyopen)
 
 					#order_table['total_qty'] = order['total_qty']
 
@@ -235,12 +238,18 @@ def order_entry():
 					#order_table.append("PriceInstruction")
 					#order_table.append("Exchange")
 					order_table.append(order['order_stamp'])
-					#order_table.append('ProductType')
+					
+					prod = mongo_product.find_one({'product_id' : order['product_id']})
+					try:
+						prod_type = prod['product_type']
+						order_table.append(prod_type)
+					except:
+						print "Product not in collection!"
+					
 					order_table.append(order['ask_price'])
 					#order_table.append(Bid)
 					order_table.append(order['LTP'])
 
-					#order_table['product_id'] = order['product_id']
 					#order_table['reason_cancellation'] = order['reason_cancellation']
 
 
@@ -257,9 +266,9 @@ def order_entry():
 						tmp_fill.append(str(order['_id']))
 						tmp_fill.append(fill['qtydone'])
 						
-						exchange_data = mongo_exchange.find_one({'exchange_id':fill['exchange_id']})
+						#exchange_data = mongo_exchange.find_one({'exchange_id':fill['exchange_id']})
 						
-						tmp_fill.append(exchange_data['exchange_name'])
+						tmp_fill.append(fill['exchange_id'])
 						tmp_fill.append(fill['exchange_stamp'])
 						tmp_fill.append(fill['price'])
 						tmp_fill.append(fill['fill_id'])
@@ -313,7 +322,8 @@ def execution_links():
 			fill['exchange_stamp'] = exchange_stamp
 			print fill
 			
-			LTP = fill['price']		# Latest traded price	
+			LTP = fill['price']		# Latest traded price
+			qtydone = fill['qtydone']	
 
 			'''qtydone = content['qtydone']
 			prices = content['prices']
@@ -332,7 +342,8 @@ def execution_links():
 				existing_fills.append(fill)
 				mongo_fill.update_one( {'order_id': order_id}, {'$set': {'fills': existing_fills} }, upsert=False)
 			
-			mongo_order.update_one( {'_id': objId}, {'$set': {'LTP': LTP} }, upsert=False)
+			mongo_order.update_one( {'_id': objId}, {'$set': {'LTP': LTP} }, upsert=False )
+			mongo_order.update_one( {'_id': objId}, {'$inc': {'order_qtydone': qtydone} }, upsert=False )
 			
 			# indicate that the request was a success
 			ack["success"] = True

@@ -12,7 +12,7 @@ URL_FOR_ORDER = "http://localhost:5000/order_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
 
-query = {'type': 4, 'user_id': 3408}
+query = {'type': 4, 'user_id': 3726}
 
 # type: 1 - Add new order, 2 - Update price/qty of order, 3 - Cancel order, 4 - Get user's order details
 
