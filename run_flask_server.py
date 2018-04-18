@@ -86,16 +86,10 @@ def order_entry():
 			if content['type'] == 1:				# Insert new order
 				ack = {"success": False}
 			
-				user_id = content['user_id']
-				product_id = content['product_id']
-				side = content['side']
-				ask_price = content['ask_price']
-				total_qty = content['total_qty']
-				
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				order_id = mongo_order.insert({'user_id' : user_id, 'product_id' : product_id, 'side' : side, 'ask_price' : ask_price, 'total_qty' : total_qty, 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 1})
+				order_id = mongo_order.insert({'user_id' : content['user_id'], 'product_id' : content['product_id'], 'side' : content['side'], 'price_instruction' : content['price_instruction'], 'ask_price' : content['ask_price'], 'total_qty' : content['total_qty'], 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 1, 'client' : content['client'], 'exchange_id' : content['exchange_id']})
 				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected)
 				# order_id returned is of the type "ObjectId"
 				
@@ -225,18 +219,16 @@ def order_entry():
 					order_table.append(order['side'])
 					order_table.append(order['state'])
 					order_table.append(order['product_id'])		# product_id = product_symbol
-					#order_table.append('Client')
+					order_table.append(order['client'])
 					
 					order_table.append(order['total_qty'])
 					order_table.append(order['order_qtydone'])
 					qtyopen = order['total_qty'] - order['order_qtydone']
 					order_table.append(qtyopen)
 
-					#order_table['total_qty'] = order['total_qty']
-
 					order_table.append(str(order['_id']))
-					#order_table.append("PriceInstruction")
-					#order_table.append("Exchange")
+					order_table.append(order['price_instruction'])
+					order_table.append(order['exchange_id'])
 					order_table.append(order['order_stamp'])
 					
 					prod = mongo_product.find_one({'product_id' : order['product_id']})

@@ -68,3 +68,25 @@ $ pip install Flask-PyMongo
 
 https://flask-pymongo.readthedocs.io/en/latest/
 https://pypi.python.org/pypi/Flask-PyMongo
+
+
+## About the project files :-
+run_flask_server.py :- It is the main file containing code for web service which has the REST API created and has two endpoints - "/order_endpoint" and "/execution_endpoint"
+
+new_order_request.py :- It is a driver program that emulates sending POST request from Order Entry for adding new order
+
+update_order_price_qty.py :- It is a driver program that emulates sending POST request from Order Entry for updating price and quantity of existing order
+
+cancel_order.py - It is a driver program that emulates sending POST request from Order Entry for cancelling an existing order
+
+get_order_details.py :- It is a driver program that emulates sending POST request from Order Entry for getting the orders placed by a user and correspoding fills to those orders
+
+execution_request.py :- It is a driver program that emulates sending POST request from Execution Links for sending new fill coming from Matching Engine
+
+exec_link_dummy_REST.py :- A dummy REST API web service created for Execution Links to test that OME can send new order/update in order coming from Order Entry to Execution Links
+
+trad_post_dummy_REST.py :- A dummy REST API web service created for Trade Post Management to test that OME can send new fill coming from Execution Links to Trade Post Management
+
+check_mongodb_contents_utility_program - A utility program containing python code snippet for checking the MongoDB collection contents to test the working
+
+redis-cache-notifs :- It is directory containing code files for Pub Sub Notifications (Not integrated with the project)
