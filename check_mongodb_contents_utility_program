@@ -6,31 +6,13 @@ Type "help", "copyright", "credits" or "license" for more information.
 import pymongo
 import pprint
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 client = MongoClient('mongodb://admin:thisisyouradmin@ds141068.mlab.com:41068/order_entry')
 
 db = client.order_entry
-db
->Database(MongoClient(host=['ds141068.mlab.com:41068'], document_class=dict, tz_aware=False, connect=True), u'order_entry')
-
 mongo_order = db.orders
-
-
-pprint.pprint(mongo_order.find_one())
-
->{u'_id': ObjectId('5ac4e9c4b48c560008694f32'),
- u'ask_price': 22,
- u'history': [{u'ask_price': 22,
-               u'order_stamp': u'2018-04-04 15:05:40',
-               u'state': 1,
-               u'total_qty': 22}],
- u'order_id': 80808808080L,
- u'order_stamp': u'2018-04-04 20:36:50',
- u'product_id': 222,
- u'side': 0,
- u'state': 3,
- u'total_qty': 22,
- u'user_id': 222}
+mongo_fill = db.fills
 
 
 pprint.pprint(mongo_order.find_one({'user_id':50}))

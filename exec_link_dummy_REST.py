@@ -10,8 +10,6 @@ import json
 app = flask.Flask(__name__)
 
 
-
-
 @app.route("/execution_REST_API_dummy", methods=["POST"])						##dummy REST API 
 def execution_links_accept():
 	# initialize the ack dictionary that will be returned from the view
@@ -27,7 +25,6 @@ def execution_links_accept():
 			ack["success"] = True
 
 	return flask.jsonify(ack)
-
 
 
 if __name__ == "__main__":
