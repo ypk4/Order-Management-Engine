@@ -21,11 +21,12 @@ def send_to_exec_link(new_order, content_type):								## send to execution link
 	URL_FOR_ORDER = "http://localhost:5001/execution_REST_API_dummy"
 	headers = {'Content-Type' : 'application/json'}
 
-
-	order_data = {'type': content_type, 'order_id': str(new_order['_id']), 'user_id': new_order['user_id'], 
-				'product_id' : new_order['product_id'], 'side': new_order['side'], 
-				'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
-				'order_stamp' : new_order['order_stamp'] } #, 'state' : new_order['state']''' }
+	order_data = {'type': content_type, 'order_id': str(new_order['_id']), 
+			'orig_cl_ord_id' : new_order['orig_cl_ord_id'], 'user_id': new_order['user_id'], 
+			'product_id' : new_order['product_id'], 'side': new_order['side'], 
+			'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
+			'order_stamp' : new_order['order_stamp'], 'order_qtydone' : new_order['order_qtydone'] } 
+			#, 'state' : new_order['state']''' }
 
 	# submit the request
 	exec_ack = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
@@ -90,7 +91,7 @@ def order_entry():
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				order_id = mongo_order.insert({ 'user_id' : content['user_id'], 'product_id' : content['product_id'], 'side' : content['side'], 'price_instruction' : content['price_instruction'], 'ask_price' : content['ask_price'], 'total_qty' : content['total_qty'], 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : -1, 'client' : content['client'], 'exchange_id' : content['exchange_id'], 'account' : content['account'], 'counter_party' : content['counter_party'] })
+				order_id = mongo_order.insert({ 'orig_cl_ord_id' : '', 'user_id' : content['user_id'], 'product_id' : content['product_id'], 'side' : content['side'], 'price_instruction' : content['price_instruction'], 'ask_price' : content['ask_price'], 'total_qty' : content['total_qty'], 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : -1, 'client' : content['client'], 'exchange_id' : content['exchange_id'], 'account' : content['account'], 'counter_party' : content['counter_party'] })
 				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected), -1 (pending)
 				# order_id returned is of the type "ObjectId"
 				
@@ -125,6 +126,17 @@ def order_entry():
 				
 				existing = mongo_order.find_one({'_id' : objId})
 				print '< existing ', existing, ' >'
+				
+				if existing == None:
+					print "Order does not exist"
+					ack['comment'] = 'Order does not exist'
+					return flask.jsonify(ack)
+					
+				# Check if the order has got some fill(s) - In that case, do not allow update
+				if existing['order_qtydone'] > 0:
+					print "Not allowed - Order has fills"
+					ack['comment'] = "Not allowed - Order has fills"
+					return flask.jsonify(ack)
 			
 				old_price = existing['ask_price']
 				old_qty = existing['total_qty']
@@ -145,11 +157,42 @@ def order_entry():
 					print 'there'
 					
 				print 'history ', history
+				
+				existing['history'] = history
+				existing['orig_cl_ord_id'] = order_id
+				existing['ask_price'] = ask_price
+				existing['total_qty'] = total_qty
+				existing['order_stamp'] = order_stamp
+								
+				print '--', existing, '--'
+				
 
-				mongo_order.update_one({'_id': objId}, {'$set': {'history': history} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'ask_price': ask_price} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'total_qty': total_qty} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'order_stamp': order_stamp} }, upsert=False)	
+				new_order_id = mongo_order.insert({ 'orig_cl_ord_id' : existing['orig_cl_ord_id'], 
+				'user_id' : existing['user_id'], 
+				'product_id' : existing['product_id'], 
+				'side' : existing['side'], 
+				'price_instruction' : existing['price_instruction'], 
+				'ask_price' : existing['ask_price'], 
+				'total_qty' : existing['total_qty'], 
+				'order_qtydone' : existing['order_qtydone'], 
+				'LTP' : existing['LTP'], 
+				'order_stamp' : existing['order_stamp'], 
+				'reason_cancellation' : existing['reason_cancellation'], 
+				'state' : -1, 
+				'client' : existing['client'], 
+				'exchange_id' : existing['exchange_id'], 
+				'account' : existing['account'], 
+				'counter_party' : existing['counter_party'], 
+				'history' : history })
+				
+				print 'NEW = ', new_order_id
+				
+				mongo_order.delete_one({'_id': objId})
+				
+				#mongo_order.update_one({'_id': objId}, {'$set': {'history': history} }, upsert=False)
+				#mongo_order.update_one({'_id': objId}, {'$set': {'ask_price': ask_price} }, upsert=False)
+				#mongo_order.update_one({'_id': objId}, {'$set': {'total_qty': total_qty} }, upsert=False)
+				#mongo_order.update_one({'_id': objId}, {'$set': {'order_stamp': order_stamp} }, upsert=False)	
 				
 				#To print contents of 'order' collection :-
 				'''results = mongo_order.find()
@@ -158,11 +201,13 @@ def order_entry():
 					print res
 				'''
 				
-				ack["success"] = True
+				#ack["success"] = True
 
-				new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
-				send_to_exec_link(new_order, content['type'])
-				
+				#new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
+				exec_ack = send_to_exec_link(existing, content['type'])
+				if exec_ack['success']:
+					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
+					ack['success'] = True
 								
 
 			elif content['type'] == 3:				# Cancel order
@@ -179,6 +224,17 @@ def order_entry():
 				existing = mongo_order.find_one({'_id' : objId})
 				print '<', existing, '>'
 				
+				if existing == None:
+					print "Order does not exist"
+					ack['comment'] = 'Order does not exist'
+					return flask.jsonify(ack)
+					
+				# Check if the order has got some fill(s) - In that case, do not allow cancellation
+				if existing['order_qtydone'] > 0:
+					print "Not allowed - Order has fills"
+					ack['comment'] = "Not allowed - Order has fills"
+					return flask.jsonify(ack)
+							
 				old_price = existing['ask_price']
 				old_qty = existing['total_qty']
 				old_stamp = existing['order_stamp']
