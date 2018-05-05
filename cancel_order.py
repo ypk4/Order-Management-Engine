@@ -9,7 +9,7 @@ URL_FOR_ORDER = "http://localhost:5000/order_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
 	
-order_data = {'type': 3, 'order_id': '5ad89590381adc1317b7f713', 'reason_cancellation': 'Unable to get desired price'}
+order_data = {'type': 3, 'order_id': '5aee00f9381adc13a80fffc9', 'reason_cancellation': 'Unable to get desired price'}
 # type: 1 - Add new order, 2 - Update price/qty of order, 3 - Cancel order, 4 - Get user's order details
 
 # submit the request
@@ -22,3 +22,4 @@ if r["success"]:
 # otherwise, the request failed
 else:
 	print ("Request failed")
+	print r

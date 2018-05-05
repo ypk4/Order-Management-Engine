@@ -16,12 +16,12 @@ app.config['MONGO_URI'] = 'mongodb://admin:thisisyouradmin@ds141068.mlab.com:410
 mongo = PyMongo(app)
 
 
-def send_to_exec_link(new_order, content_type):								## send to execution link
+def send_to_exec_link(new_order, new_order_id, content_type):							## send to execution link
 	# initialize the REST API endpoint URL
 	URL_FOR_ORDER = "http://localhost:5001/execution_REST_API_dummy"
 	headers = {'Content-Type' : 'application/json'}
 
-	order_data = {'type': content_type, 'order_id': str(new_order['_id']), 
+	order_data = {'type': content_type, 'order_id': str(new_order_id), 
 			'orig_cl_ord_id' : new_order['orig_cl_ord_id'], 'user_id': new_order['user_id'], 
 			'product_id' : new_order['product_id'], 'side': new_order['side'], 
 			'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
@@ -103,7 +103,7 @@ def order_entry():
 
 				new_order = mongo_order.find_one({'_id' : order_id})		## new/updated/canceled order
 
-				exec_ack = send_to_exec_link(new_order, content['type'])
+				exec_ack = send_to_exec_link(new_order, order_id, content['type'])
 				
 				print exec_ack
 				
@@ -194,17 +194,10 @@ def order_entry():
 				#mongo_order.update_one({'_id': objId}, {'$set': {'total_qty': total_qty} }, upsert=False)
 				#mongo_order.update_one({'_id': objId}, {'$set': {'order_stamp': order_stamp} }, upsert=False)	
 				
-				#To print contents of 'order' collection :-
-				'''results = mongo_order.find()
-				print 'BELOW\n'
-				for res in results:
-					print res
-				'''
-				
 				#ack["success"] = True
 
 				#new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
-				exec_ack = send_to_exec_link(existing, content['type'])
+				exec_ack = send_to_exec_link(existing, new_order_id, content['type'])
 				if exec_ack['success']:
 					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
 					ack['success'] = True
@@ -251,17 +244,50 @@ def order_entry():
 					history = existing['history']
 					history.append(old_values)
 
-				mongo_order.update_one({'_id': objId}, {'$set': {'history': history} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'state': 3} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
-				mongo_order.update_one({'_id': objId}, {'$set': {'reason_cancellation': reason_cancellation} }, upsert=False)
+				existing['history'] = history
+				existing['orig_cl_ord_id'] = order_id
+				#existing['state'] = 3
+				existing['order_stamp'] = order_stamp
+				existing['reason_cancellation'] = reason_cancellation
+				
+				print '--', existing, '--'
+				
+
+				new_order_id = mongo_order.insert({ 'orig_cl_ord_id' : existing['orig_cl_ord_id'], 
+				'user_id' : existing['user_id'], 
+				'product_id' : existing['product_id'], 
+				'side' : existing['side'], 
+				'price_instruction' : existing['price_instruction'], 
+				'ask_price' : existing['ask_price'], 
+				'total_qty' : existing['total_qty'], 
+				'order_qtydone' : existing['order_qtydone'], 
+				'LTP' : existing['LTP'], 
+				'order_stamp' : existing['order_stamp'], 
+				'reason_cancellation' : existing['reason_cancellation'], 
+				'state' : -1, 
+				'client' : existing['client'], 
+				'exchange_id' : existing['exchange_id'], 
+				'account' : existing['account'], 
+				'counter_party' : existing['counter_party'], 
+				'history' : history })
+				
+				print 'NEW = ', new_order_id
+				
+				mongo_order.delete_one({'_id': objId})
+				
+				#mongo_order.update_one({'_id': objId}, {'$set': {'history': history} }, upsert=False)
+				#mongo_order.update_one({'_id': objId}, {'$set': {'state': 3} }, upsert=False)
+				#mongo_order.update_one({'_id': objId}, {'$set': {'order_stamp': order_stamp} }, upsert=False)
+				#mongo_order.update_one({'_id': objId}, {'$set': {'reason_cancellation': reason_cancellation} }, upsert=False)
 									
-				ack["success"] = True
+				#ack["success"] = True
 
-				new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
-				send_to_exec_link(new_order, content['type'])
-
-
+				#new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
+				exec_ack = send_to_exec_link(existing, new_order_id, content['type'])
+				if exec_ack['success']:
+					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 3} }, upsert=False)  # Live order
+					ack['success'] = True
+				
 
 			elif content['type'] == 4:				# get order details
 				user_id = content['user_id']
