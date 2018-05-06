@@ -9,7 +9,15 @@ import json
 
 from bson.objectid import ObjectId
 
+from flask import Flask
+from flask_cors import CORS, cross_origin
+
 app = flask.Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
+app.config['Access-Control-Allow-Credentials'] = 'true'
+app.config['Access-Control-Allow-Origin'] = '*'
+
 app.config['MONGO_DBNAME'] = 'order_entry'
 app.config['MONGO_URI'] = 'mongodb://admin:thisisyouradmin@ds141068.mlab.com:41068/order_entry'
 
@@ -18,18 +26,33 @@ mongo = PyMongo(app)
 
 def send_to_exec_link(new_order, new_order_id, content_type):							## send to execution link
 	# initialize the REST API endpoint URL
-	URL_FOR_ORDER = "http://localhost:5001/execution_REST_API_dummy"
+	#URL_FOR_ORDER = "http://localhost:5001/execution_REST_API_dummy"
+	
 	headers = {'Content-Type' : 'application/json'}
 
 	order_data = {'type': content_type, 'order_id': str(new_order_id), 
-			'orig_cl_ord_id' : new_order['orig_cl_ord_id'], 'user_id': new_order['user_id'], 
+			'OrigClOrdID' : new_order['orig_cl_ord_id'], 'user_id': new_order['user_id'], 
 			'product_id' : new_order['product_id'], 'side': new_order['side'], 
 			'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
-			'order_stamp' : new_order['order_stamp'], 'order_qtydone' : new_order['order_qtydone'] } 
+			'order_stamp' : new_order['order_stamp'], 'order_qtydone' : new_order['order_qtydone'], 
+			'account' : new_order['account'], 'exchange_id' : new_order['exchange_id'] } 
 			#, 'state' : new_order['state']''' }
 
+	if content_type == 1:
+		URL = "http://10.100.111.146:8080/api/v1/new_order"
+		
+	elif content_type == 2:
+		URL = "http://10.100.111.146:8080/api/v1/update_order"
+		
+	else:
+		URL = "http://10.100.111.146:8080/api/v1/delete_order"
+		
+	#URL = "http://localhost:5001/execution_REST_API_dummy"
+		
+	exec_ack = requests.post(URL, data = json.dumps(order_data), headers = headers).json()
+	
 	# submit the request
-	exec_ack = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
+	#exec_ack = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = headers).json()
 
 	# ensure the request was sucessful
 	#if r["success"]:
@@ -50,7 +73,8 @@ def send_to_trade_post(order, fill, fill_list):				## send to trade post
 				'product_id' : order['product_id'], 'side': order['side'], 
 				'ask_price': order['ask_price'], 'total_qty' : order['total_qty'], 
 				'order_stamp' : order['order_stamp'], 'state' : order['state'],
-				'fill' : fill }
+				'fill' : fill,
+				'account' : order['account'] }
 
 	# submit the request
 	r = requests.post(URL_FOR_ORDER_FILL, data = json.dumps(order_fill_data), headers = headers).json()
@@ -76,23 +100,32 @@ def order_entry():
 	mongo_exchange = mongo.db.exchange
 	mongo_product = mongo.db.product
 	
+	ack = {}
+	
 	if flask.request.method == "POST":
-		#print request.data
-		if flask.request.is_json:
-			content = flask.request.get_json()	
-			print content
+		print 'POST ', 'Request ', flask.request, 'Data = ', flask.request.data, flask.request.json, flask.request.form
+		
+		#ack= {'suc':'232'}
+		#return flask.jsonify(ack)
+		
+		
+		#if flask.request.is_json:
+		if True:
+			content = flask.request.get_json()
+			#content = flask.request.form	
+			print "JSON content ", content
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
 
 
-			if content['type'] == 1:				# Insert new order
+			if int(content['type']) == 1:				# Insert new order
 				ack = {"success": False}
 			
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				order_id = mongo_order.insert({ 'orig_cl_ord_id' : '', 'user_id' : content['user_id'], 'product_id' : content['product_id'], 'side' : content['side'], 'price_instruction' : content['price_instruction'], 'ask_price' : content['ask_price'], 'total_qty' : content['total_qty'], 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : -1, 'client' : content['client'], 'exchange_id' : content['exchange_id'], 'account' : content['account'], 'counter_party' : content['counter_party'] })
-				# state = 1 (live), 2 (closed), 3 (cancelled), 4 (filled), 5 (rejected), -1 (pending)
+				order_id = mongo_order.insert({ 'orig_cl_ord_id' : '', 'user_id' : int(content['user_id']), 'product_id' : content['product_id'], 'side' : int(content['side']), 'price_instruction' : content['price_instruction'], 'ask_price' : int(content['ask_price']), 'total_qty' : int(content['total_qty']), 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : -1, 'client' : int(content['client']), 'exchange_id' : content['exchange_id'], 'account' : int(content['account']), 'counter_party' : content['counter_party'] })
+				# state = 1 (pending), 2 (filled), 3 (cancelled), 4 (partially filled), 5 (rejected), -1 (live)
 				# order_id returned is of the type "ObjectId"
 				
 				print 'Order id = ', order_id
@@ -103,7 +136,7 @@ def order_entry():
 
 				new_order = mongo_order.find_one({'_id' : order_id})		## new/updated/canceled order
 
-				exec_ack = send_to_exec_link(new_order, order_id, content['type'])
+				exec_ack = send_to_exec_link(new_order, order_id, int(content['type']))
 				
 				print exec_ack
 				
@@ -112,14 +145,14 @@ def order_entry():
 					ack['success'] = True
 				
 
-			elif content['type'] == 2:				# Update price & quantity of order
+			elif int(content['type']) == 2:				# Update price & quantity of order
 				ack = {"success": False}
 				
 				order_id = content['order_id']
 				objId = ObjectId(order_id)
 			
-				ask_price = content['ask_price']
-				total_qty = content['total_qty']
+				ask_price = int(content['ask_price'])
+				total_qty = int(content['total_qty'])
 				
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -178,7 +211,7 @@ def order_entry():
 				'LTP' : existing['LTP'], 
 				'order_stamp' : existing['order_stamp'], 
 				'reason_cancellation' : existing['reason_cancellation'], 
-				'state' : -1, 
+				'state' : -2, 
 				'client' : existing['client'], 
 				'exchange_id' : existing['exchange_id'], 
 				'account' : existing['account'], 
@@ -197,13 +230,13 @@ def order_entry():
 				#ack["success"] = True
 
 				#new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
-				exec_ack = send_to_exec_link(existing, new_order_id, content['type'])
+				exec_ack = send_to_exec_link(existing, new_order_id, int(content['type']))
 				if exec_ack['success']:
 					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
 					ack['success'] = True
 								
 
-			elif content['type'] == 3:				# Cancel order
+			elif int(content['type']) == 3:				# Cancel order
 				ack = {"success": False}
 				
 				order_id = content['order_id']
@@ -264,7 +297,7 @@ def order_entry():
 				'LTP' : existing['LTP'], 
 				'order_stamp' : existing['order_stamp'], 
 				'reason_cancellation' : existing['reason_cancellation'], 
-				'state' : -1, 
+				'state' : -3, 
 				'client' : existing['client'], 
 				'exchange_id' : existing['exchange_id'], 
 				'account' : existing['account'], 
@@ -283,14 +316,14 @@ def order_entry():
 				#ack["success"] = True
 
 				#new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
-				exec_ack = send_to_exec_link(existing, new_order_id, content['type'])
+				exec_ack = send_to_exec_link(existing, new_order_id, int(content['type']))
 				if exec_ack['success']:
-					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 3} }, upsert=False)  # Live order
+					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 3} }, upsert=False) #cancelled order
 					ack['success'] = True
 				
 
-			elif content['type'] == 4:				# get order details
-				user_id = content['user_id']
+			elif int(content['type']) == 4:				# get order details
+				user_id = int(content['user_id'])
 
 				orders = []
 				order_data = mongo_order.find({'user_id' : user_id})
@@ -328,7 +361,7 @@ def order_entry():
 						print "Product not in collection!"
 					
 					order_table.append(order['ask_price'])
-					#order_table.append(Bid)
+					order_table.append(order['ask_price'])
 					order_table.append(order['LTP'])
 
 					#order_table['reason_cancellation'] = order['reason_cancellation']
@@ -352,7 +385,7 @@ def order_entry():
 						tmp_fill.append(fill['exchange_id'])
 						tmp_fill.append(fill['exchange_stamp'])
 						tmp_fill.append(fill['price'])
-						tmp_fill.append(fill['fill_id'])
+						#tmp_fill.append(fill['fill_id'])
 										#tmp_fill['exchange_id'] = fill['exchange_id']
 
 						fill_table.append(tmp_fill)
@@ -441,6 +474,6 @@ def execution_links():
 if __name__ == "__main__":
 	print(("* Flask starting server..."
 		"Please wait until server has fully started"))
-	app.run(debug=True)
+	app.run(debug=True, host='0.0.0.0')
 
 

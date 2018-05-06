@@ -9,7 +9,7 @@ URL_FOR_ORDER = "http://localhost:5000/order_endpoint"
 headers = {'Content-Type' : 'application/json'}
 
 	
-order_data = {'type': 2, 'order_id': '5aee007e381adc13a80fffc8', 'ask_price': 85, 'total_qty': 20}
+order_data = {'type': 2, 'order_id': '5aeef2d7381adc298534e24c', 'ask_price': 85, 'total_qty': 20}
 # type: 1 - Add new order, 2 - Update price/qty of order, 3 - Cancel order, 4 - Get user's order details
 
 # submit the request
