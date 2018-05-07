@@ -23,10 +23,12 @@ app.config['MONGO_URI'] = 'mongodb://admin:thisisyouradmin@ds141068.mlab.com:410
 
 mongo = PyMongo(app)
 
-
-states_dic = {'0':'New', '1':'Partially filled', '2':'Filled', '3':'Done for day', '4':'Cancelled', '6':'Pending for cancel',
-		'7':'Stopped', '8':'Rejected', '9':'Suspended', 'A':'Pending new', 'B':'Calculated', 
+# '0' - LIVE / NEW
+states_dict = {'0':'LIVE', '1':'Partially filled', '2':'Filled', '3':'Done for day', '4':'Cancelled', '6':'Pending for cancel',
+		'7':'Stopped', '8':'Rejected', '9':'Suspended', 'A':'PN', 'B':'Calculated', 
 		'C':'Expired', 'D':'Accepted for binding', 'E':'Pending replace'}
+		
+side_dict = {0:'B', 1:'S'}
 		
 
 def send_to_exec_link(new_order, new_order_id, content_type):							## send to execution link
@@ -115,8 +117,8 @@ def order_entry():
 		
 		#if flask.request.is_json:
 		if True:
-			content = flask.request.get_json()
-			#content = flask.request.form	
+			#content = flask.request.get_json()
+			content = flask.request.form	
 			print "JSON content ", content
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
@@ -128,7 +130,7 @@ def order_entry():
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				order_id = mongo_order.insert({ 'orig_cl_ord_id' : '', 'user_id' : int(content['user_id']), 'product_id' : content['product_id'], 'side' : int(content['side']), 'price_instruction' : content['price_instruction'], 'ask_price' : int(content['ask_price']), 'total_qty' : int(content['total_qty']), 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 'A', 'client' : int(content['client']), 'exchange_id' : content['exchange_id'], 'account' : int(content['account']), 'counter_party' : content['counter_party'] })
+				order_id = mongo_order.insert({ 'orig_cl_ord_id' : '', 'user_id' : int(content['user_id']), 'product_id' : content['product_id'], 'side' : int(content['side']), 'price_instruction' : content['price_instruction'], 'ask_price' : float(content['ask_price']), 'total_qty' : int(content['total_qty']), 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 'A', 'client' : int(content['client']), 'exchange_id' : content['exchange_id'], 'account' : int(content['account']), 'counter_party' : content['counter_party'] })
 				# state = 1 (pending), 2 (filled), 3 (cancelled), 4 (partially filled), 5 (rejected), -1 (live)
 				# order_id returned is of the type "ObjectId"
 				
@@ -332,18 +334,39 @@ def order_entry():
 				orders = []
 				order_data = mongo_order.find({'user_id' : user_id})
 
-				order_columns = ["Side", "State", "Symbol", "Client", "Size", "QtyDone", "QtyOpen", "OrderId",
-								"PriceInstruction", "Exchange", "OrderStamp", "ProductType", "Ask", "Bid",
-								"LTP", "Fills"]
-
-				fill_columns = ["OrderId", "QtyDone", "Exchange", "Stamp", "Price", "FillId"]
-
+				fill_columns = [
+				  { 'id': 0, 'name': "OrderId", 'sortAsc': True },
+				  { 'id': 1, 'name': "QtyDone", 'sortAsc': True },
+				  { 'id': 2, 'name': "Exchange", 'sortAsc': True },
+				  { 'id': 3, 'name': "Stamp", 'sortAsc': True },
+				  { 'id': 4, 'name': "Price", 'sortAsc': True },
+				  { 'id': 5, 'name': "FillId", 'sortAsc': True }
+				]
+				order_columns = [
+				  { 'id': 0, 'name': "Side", 'sortAsc': True },
+				  { 'id': 1, 'name': "State", 'sortAsc': True },
+				  { 'id': 2, 'name': "Symbol", 'sortAsc': True },
+				  { 'id': 3, 'name': "Client", 'sortAsc': True },
+				  { 'id': 4, 'name': "Size", 'sortAsc': True },
+				  { 'id': 5, 'name': "QtyDone", 'sortAsc': True },
+				  { 'id': 6, 'name': "QtyOpen", 'sortAsc': True },
+				  { 'id': 7, 'name': "OrderId", 'sortAsc': True },
+				  { 'id': 8, 'name': "PriceInstruction", 'sortAsc': True },
+				  { 'id': 9, 'name': "Exchange", 'sortAsc': True },
+				  { 'id': 10, 'name': "OrderStamp", 'sortAsc': True },
+				  { 'id': 11, 'name': "ProductType", 'sortAsc': True },
+				  { 'id': 12, 'name': "Ask", 'sortAsc': True },
+				  { 'id': 13, 'name': "Bid", 'sortAsc': True },
+				  { 'id': 14, 'name': "LTP", 'sortAsc': True },
+				  { 'id': 15, 'name': "Fills", 'sortAsc': True }
+				]
+			
 				data = []
 				i = 0
 				for order in order_data:
 					order_table = []
-					order_table.append(order['side'])
-					order_table.append(order['state'])
+					order_table.append(side_dict[order['side']])
+					order_table.append(states_dict[order['state']])
 					order_table.append(order['product_id'])		# product_id = product_symbol
 					order_table.append(order['client'])
 					
@@ -401,7 +424,14 @@ def order_entry():
 
 				Orders = {'order_columns' : order_columns, 'fill_columns' : fill_columns, 'data' : data}
 				ack = {'Orders' : Orders}
+				
+				response = flask.jsonify(ack)
+				response.headers.add('Access-Control-Allow-Origin', '*')
+				response.headers.add('Access-Control-Allow-Credentials', 'false')
+				
 				print(json.dumps(ack, sort_keys=True, indent=4))
+				
+				return response
 
 			#new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
 			#send_to_exec_link(new_order, content['type'])				
