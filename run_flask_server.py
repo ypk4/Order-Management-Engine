@@ -33,7 +33,7 @@ side_dict = {0:'B', 1:'S'}
 
 def send_to_exec_link(new_order, new_order_id, content_type):							## send to execution link
 	# initialize the REST API endpoint URL
-	URL = "http://localhost:5001/execution_REST_API_dummy"
+	#URL = "http://localhost:5001/execution_REST_API_dummy"
 	
 	headers = {'Content-Type' : 'application/json'}
 
@@ -46,14 +46,14 @@ def send_to_exec_link(new_order, new_order_id, content_type):							## send to e
 			'price_instruction' : new_order['price_instruction'] } 
 			#, 'state' : new_order['state']''' }
 
-	'''if content_type == 1:
-		URL = "http://10.100.111.146:8080/api/v1/new_order"
+	if content_type == 1:
+		URL = "http://192.168.43.29:8080/api/v1/new_order"
 		
 	elif content_type == 2:
-		URL = "http://10.100.111.146:8080/api/v1/update_order"
+		URL = "http://192.168.43.29:8080/api/v1/update_order"
 		
 	else:
-		URL = "http://10.100.111.146:8080/api/v1/delete_order"'''
+		URL = "http://192.168.43.29:8080/api/v1/delete_order"
 		
 	exec_ack = requests.post(URL, data = json.dumps(order_data), headers = headers).json()
 	
@@ -117,8 +117,8 @@ def order_entry():
 		
 		#if flask.request.is_json:
 		if True:
-			#content = flask.request.get_json()
-			content = flask.request.form	
+			content = flask.request.get_json()			# When we run with "Driver programs"
+			#content = flask.request.form				# When we run with "GUI"
 			print "JSON content ", content
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
@@ -451,11 +451,13 @@ def execution_links():
 	mongo_fill = mongo.db.fills
 	mongo_order = mongo.db.orders 								##
 	
+	print 'here'
+	
 	if flask.request.method == "POST":
-		#print request.data
+		print 'From exec', flask.request.data
 		if flask.request.is_json:
 			content = flask.request.get_json()	
-			print content
+			print 'Content ', content
 			#print flask.request.environ['REMOTE_ADDR']
 			#print 'IP of sender : ', flask.request.remote_addr
 			
@@ -463,7 +465,7 @@ def execution_links():
 			exchange_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 						
 			order_status = content['OrdStatus']
-			order_id = content['OrderId']
+			order_id = content['ClOrdID']
 			objId = ObjectId(order_id)
 			
 			if order_status == '1' or order_status == '2':			# Partially filled / Filled
@@ -488,8 +490,12 @@ def execution_links():
 				mongo_order.update_one( {'_id': objId}, {'$inc': {'order_qtydone': qtydone} }, upsert=False )	
 				mongo_order.update_one( {'_id': objId}, {'$set': {'state': order_status} }, upsert=False )
 			
-								
+				order_send = mongo_order.find_one({'_id' : objId})    ##
+				fill_list_send = mongo_fill.find_one({'order_id' : order_id})		##		
+				send_to_trade_post(order_send, fill, fill_list_send)				## send to trade post
+				
 			else:
+				print "Order status ", order_status
 				mongo_order.update_one( {'_id': objId}, {'$set': {'state': order_status} }, upsert=False )
 				
 			'''elif order_status == '0':		# New (Either Pending New to New OR Pending Replace to New)
@@ -528,10 +534,6 @@ def execution_links():
 			
 			# indicate that the request was a success
 			ack["success"] = True
-
-			order_send = mongo_order.find_one({'_id' : objId})    ##
-			fill_list_send = mongo_fill.find_one({'order_id' : order_id})		##		
-			send_to_trade_post(order_send, fill, fill_list_send)				## send to trade post
 
 	return flask.jsonify(ack)
 
