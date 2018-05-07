@@ -12,6 +12,8 @@ from bson.objectid import ObjectId
 from flask import Flask
 from flask_cors import CORS, cross_origin
 
+import re
+
 app = flask.Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -117,8 +119,8 @@ def order_entry():
 		
 		#if flask.request.is_json:
 		if True:
-			content = flask.request.get_json()			# When we run with "Driver programs"
-			#content = flask.request.form				# When we run with "GUI"
+			#content = flask.request.get_json()			# When we run with "Driver programs"
+			content = flask.request.form				# When we run with "GUI"
 			print "JSON content ", content
 			#print 'IP of sender : ', flask.request.remote_addr
 			#print flask.request.environ['REMOTE_ADDR']
@@ -362,6 +364,7 @@ def order_entry():
 				]
 			
 				data = []
+				accounts = []
 				i = 0
 				for order in order_data:
 					order_table = []
@@ -390,6 +393,7 @@ def order_entry():
 					order_table.append(order['ask_price'])
 					order_table.append(order['ask_price'])
 					order_table.append(order['LTP'])
+					accounts.append(order['account'])
 
 					#order_table['reason_cancellation'] = order['reason_cancellation']
 
@@ -423,7 +427,7 @@ def order_entry():
 					i = i + 1
 
 				Orders = {'order_columns' : order_columns, 'fill_columns' : fill_columns, 'data' : data}
-				ack = {'Orders' : Orders}
+				ack = {'Orders' : Orders, 'accounts':accounts}
 				
 				response = flask.jsonify(ack)
 				response.headers.add('Access-Control-Allow-Origin', '*')
@@ -432,6 +436,74 @@ def order_entry():
 				print(json.dumps(ack, sort_keys=True, indent=4))
 				
 				return response
+				
+				
+			elif int(content['type']) == 5:
+ 				print("type=5")
+ 				symbols = content['symbols']
+  				ltps = {}
+ 				clps = {}
+ 				sps = {}
+ 				
+ 				for x in symbols:
+ 					orders = [str(y['_id']) for y in  mongo_order.find({'product_id':x})]
+ 					#print(orders)
+ 					'''
+ 					for i in orders:
+ 						fill = mongo_fill.find({'order_id':i})
+ 						if i == 0:
+ 							fills =fill
+ 						else:
+ 							fills.union(fill)						
+ 					for fill in fills:
+ 						print(fills)'''
+ 					fills = mongo_fill.find({'order_id':{"$in": orders}})
+ 					new_fills = []
+ 					for i in fills:
+ 						#print(i)
+ 						if i == 0:
+ 							new_fills = i['fills']
+ 						else:
+ 							new_fills = new_fills + i['fills'] 
+ 					mytuple = []
+ 					for  j in new_fills:
+ 						mytuple.append((j['exchange_stamp'].encode("utf-8").replace(" ",""),j['price']))
+ 					today = datetime.date.today()
+ 					yesterday = today -  datetime.timedelta(days=1) 
+ 					today_string =  today.strftime('%Y-%m-%d') +'*'
+ 					#yesterday_string = yesterday.strftime('%Y-%m-%d') +'*'
+ 					mytuple.sort(key=lambda y:y[0])
+ 					#y = re.compile(yesterday_string,re.UNICODE)
+ 					t = re.compile(today_string,re.UNICODE)
+ 					e_stamps  = [y[0] for y in mytuple]
+ 					#print(e_stamps)
+ 					today = [str(y) for y in list(filter(t.search,e_stamps))]
+ 					#print(today)
+ 					today = sorted(today)
+ 					#print(today)
+ 					#yesterday =[str(y) for y in list(filter(y.match,e_stamps))]
+ 					#yesterday = sorted(yesterday,reverse = True)	
+ 					ltp = mytuple[-1][1]
+ 					ltps[x] = ltp
+ 					#print("ltp",ltp)
+ 					#yesterday.sort(reverse=True)
+ 					#clp = list(filter(lambda y:y[0] == yesterday[0],mytuple))[0][1]
+ 					#clps[x] = clp
+ 					#print(mytuple)
+ 					#print(today)
+ 					#print("first",today[0])
+ 					sp = list(filter(lambda y:y[0] ==today[0],mytuple))
+ 					print(sp)
+ 					sps[x] = sp[0][1]
+ 					
+ 				ack  = {'ltps':ltps,'sps':sps}
+ 				response = flask.jsonify(ack)
+ 				response.headers.add('Access-Control-Allow-Origin', '*')
+ 				response.headers.add('Access-Control-Allow-Credentials', 'false')
+ 				
+ 				print(json.dumps(ack, sort_keys=True, indent=4))
+ 				
+ 				return response
 
 			#new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
 			#send_to_exec_link(new_order, content['type'])				
