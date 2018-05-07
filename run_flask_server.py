@@ -24,9 +24,14 @@ app.config['MONGO_URI'] = 'mongodb://admin:thisisyouradmin@ds141068.mlab.com:410
 mongo = PyMongo(app)
 
 
+states_dic = {'0':'New', '1':'Partially filled', '2':'Filled', '3':'Done for day', '4':'Cancelled', '6':'Pending for cancel',
+		'7':'Stopped', '8':'Rejected', '9':'Suspended', 'A':'Pending new', 'B':'Calculated', 
+		'C':'Expired', 'D':'Accepted for binding', 'E':'Pending replace'}
+		
+
 def send_to_exec_link(new_order, new_order_id, content_type):							## send to execution link
 	# initialize the REST API endpoint URL
-	#URL_FOR_ORDER = "http://localhost:5001/execution_REST_API_dummy"
+	URL = "http://localhost:5001/execution_REST_API_dummy"
 	
 	headers = {'Content-Type' : 'application/json'}
 
@@ -35,19 +40,18 @@ def send_to_exec_link(new_order, new_order_id, content_type):							## send to e
 			'product_id' : new_order['product_id'], 'side': new_order['side'], 
 			'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
 			'order_stamp' : new_order['order_stamp'], 'order_qtydone' : new_order['order_qtydone'], 
-			'account' : new_order['account'], 'exchange_id' : new_order['exchange_id'] } 
+			'account' : new_order['account'], 'exchange_id' : new_order['exchange_id'], 
+			'price_instruction' : new_order['price_instruction'] } 
 			#, 'state' : new_order['state']''' }
 
-	if content_type == 1:
+	'''if content_type == 1:
 		URL = "http://10.100.111.146:8080/api/v1/new_order"
 		
 	elif content_type == 2:
 		URL = "http://10.100.111.146:8080/api/v1/update_order"
 		
 	else:
-		URL = "http://10.100.111.146:8080/api/v1/delete_order"
-		
-	#URL = "http://localhost:5001/execution_REST_API_dummy"
+		URL = "http://10.100.111.146:8080/api/v1/delete_order"'''
 		
 	exec_ack = requests.post(URL, data = json.dumps(order_data), headers = headers).json()
 	
@@ -124,7 +128,7 @@ def order_entry():
 				ts = time.time()
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
-				order_id = mongo_order.insert({ 'orig_cl_ord_id' : '', 'user_id' : int(content['user_id']), 'product_id' : content['product_id'], 'side' : int(content['side']), 'price_instruction' : content['price_instruction'], 'ask_price' : int(content['ask_price']), 'total_qty' : int(content['total_qty']), 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : -1, 'client' : int(content['client']), 'exchange_id' : content['exchange_id'], 'account' : int(content['account']), 'counter_party' : content['counter_party'] })
+				order_id = mongo_order.insert({ 'orig_cl_ord_id' : '', 'user_id' : int(content['user_id']), 'product_id' : content['product_id'], 'side' : int(content['side']), 'price_instruction' : content['price_instruction'], 'ask_price' : int(content['ask_price']), 'total_qty' : int(content['total_qty']), 'order_qtydone' : 0, 'LTP' : -1, 'order_stamp' : order_stamp, 'reason_cancellation' : '', 'state' : 'A', 'client' : int(content['client']), 'exchange_id' : content['exchange_id'], 'account' : int(content['account']), 'counter_party' : content['counter_party'] })
 				# state = 1 (pending), 2 (filled), 3 (cancelled), 4 (partially filled), 5 (rejected), -1 (live)
 				# order_id returned is of the type "ObjectId"
 				
@@ -141,7 +145,7 @@ def order_entry():
 				print exec_ack
 				
 				if exec_ack['success']:
-					mongo_order.update_one({'_id': order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
+					#mongo_order.update_one({'_id': order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
 					ack['success'] = True
 				
 
@@ -211,7 +215,7 @@ def order_entry():
 				'LTP' : existing['LTP'], 
 				'order_stamp' : existing['order_stamp'], 
 				'reason_cancellation' : existing['reason_cancellation'], 
-				'state' : -2, 
+				'state' : 'E', 
 				'client' : existing['client'], 
 				'exchange_id' : existing['exchange_id'], 
 				'account' : existing['account'], 
@@ -232,7 +236,7 @@ def order_entry():
 				#new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
 				exec_ack = send_to_exec_link(existing, new_order_id, int(content['type']))
 				if exec_ack['success']:
-					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
+					#mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
 					ack['success'] = True
 								
 
@@ -297,7 +301,7 @@ def order_entry():
 				'LTP' : existing['LTP'], 
 				'order_stamp' : existing['order_stamp'], 
 				'reason_cancellation' : existing['reason_cancellation'], 
-				'state' : -3, 
+				'state' : '6', 
 				'client' : existing['client'], 
 				'exchange_id' : existing['exchange_id'], 
 				'account' : existing['account'], 
@@ -318,7 +322,7 @@ def order_entry():
 				#new_order = mongo_order.find_one({'_id' : objId})		## new/updated/canceled order
 				exec_ack = send_to_exec_link(existing, new_order_id, int(content['type']))
 				if exec_ack['success']:
-					mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 3} }, upsert=False) #cancelled order
+					#mongo_order.update_one({'_id': new_order_id}, {'$set': {'state': 3} }, upsert=False) #cancelled order
 					ack['success'] = True
 				
 
@@ -425,26 +429,59 @@ def execution_links():
 			#print flask.request.environ['REMOTE_ADDR']
 			#print 'IP of sender : ', flask.request.remote_addr
 			
-			order_id = content['order_id']
+			ts = time.time()
+			exchange_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+						
+			order_status = content['OrdStatus']
+			order_id = content['OrderId']
 			objId = ObjectId(order_id)
 			
+			if order_status == '1' or order_status == '2':			# Partially filled / Filled
+				price = content['price']
+				qtydone = content['CumQty']
+				LTP = price		# Latest traded price
+				
+				fill = {'price' : price, 'qtydone' : qtydone, 'exchange_id' : 'NSE', 'exchange_stamp' : exchange_stamp}
+				
+				existing = mongo_fill.find_one({'order_id' : order_id})
+				print '<', existing, '>'
+			
+				if existing == None:	# If fills for this order_id do not exist, create new json with list of fills
+					mongo_fill.insert({ 'order_id' : order_id, 'fills' : [fill] })
+				
+				else:			# If fills for this order_id already exist, then append the new fill to list
+					existing_fills = existing['fills']
+					existing_fills.append(fill)
+					mongo_fill.update_one( {'order_id': order_id}, {'$set': {'fills': existing_fills} }, upsert=False)
+			
+				mongo_order.update_one( {'_id': objId}, {'$set': {'LTP': LTP} }, upsert=False )
+				mongo_order.update_one( {'_id': objId}, {'$inc': {'order_qtydone': qtydone} }, upsert=False )	
+				mongo_order.update_one( {'_id': objId}, {'$set': {'state': order_status} }, upsert=False )
+			
+								
+			else:
+				mongo_order.update_one( {'_id': objId}, {'$set': {'state': order_status} }, upsert=False )
+				
+			'''elif order_status == '0':		# New (Either Pending New to New OR Pending Replace to New)
+				mongo_order.update_one( {'_id': objId}, {'$set': {'state': order_status} }, upsert=False )
+				pass
+				
+			elif order_status == '4':		# Cancelled
+				pass
+				
+			elif order_status == '8':		# Rejected
+				pass'''
+			
+			'''
 			fill = content['fill']			
 			print fill
 			
-			ts = time.time()
-			exchange_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 			fill['exchange_stamp'] = exchange_stamp
 			print fill
 			
 			LTP = fill['price']		# Latest traded price
 			qtydone = fill['qtydone']	
 
-			'''qtydone = content['qtydone']
-			prices = content['prices']
-			exchange_id = content['exchange_id']
-			
-			fill.insert({'fill_ids' : fill_ids, 'order_id' : order_id, 'qtydone' : qtydone, 'prices' : prices, 'exchange_id' : exchange_id})'''
-			
 			existing = mongo_fill.find_one({'order_id' : order_id})
 			print '<', existing, '>'
 			
@@ -457,11 +494,10 @@ def execution_links():
 				mongo_fill.update_one( {'order_id': order_id}, {'$set': {'fills': existing_fills} }, upsert=False)
 			
 			mongo_order.update_one( {'_id': objId}, {'$set': {'LTP': LTP} }, upsert=False )
-			mongo_order.update_one( {'_id': objId}, {'$inc': {'order_qtydone': qtydone} }, upsert=False )
+			mongo_order.update_one( {'_id': objId}, {'$inc': {'order_qtydone': qtydone} }, upsert=False )'''
 			
 			# indicate that the request was a success
 			ack["success"] = True
-
 
 			order_send = mongo_order.find_one({'_id' : objId})    ##
 			fill_list_send = mongo_fill.find_one({'order_id' : order_id})		##		
