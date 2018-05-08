@@ -35,27 +35,28 @@ side_dict = {0:'B', 1:'S'}
 
 def send_to_exec_link(new_order, new_order_id, content_type):							## send to execution link
 	# initialize the REST API endpoint URL
+	URL = ""
 	#URL = "http://localhost:5001/execution_REST_API_dummy"
 	
 	headers = {'Content-Type' : 'application/json'}
 
 	order_data = {'type': content_type, 'order_id': str(new_order_id), 
 			'OrigClOrdID' : new_order['orig_cl_ord_id'], 'user_id': new_order['user_id'], 
-			'product_id' : new_order['product_id'], 'side': new_order['side'], 
-			'ask_price': new_order['ask_price'], 'total_qty' : new_order['total_qty'], 
+			'product_id' : new_order['product_id'], 'side': str(new_order['side']), 
+			'ask_price': str(new_order['ask_price']), 'total_qty' : str(new_order['total_qty']), 
 			'order_stamp' : new_order['order_stamp'], 'order_qtydone' : new_order['order_qtydone'], 
 			'account' : new_order['account'], 'exchange_id' : new_order['exchange_id'], 
-			'price_instruction' : new_order['price_instruction'] } 
+			'price_instruction' : new_order['price_instruction'] }
 			#, 'state' : new_order['state']''' }
 
 	if content_type == 1:
-		URL = "http://192.168.43.29:8080/api/v1/new_order"
+		URL = "http://192.168.43.219:8080/api/v1/new_order"
 		
 	elif content_type == 2:
-		URL = "http://192.168.43.29:8080/api/v1/update_order"
+		URL = "http://192.168.43.219:8080/api/v1/update_order"
 		
 	else:
-		URL = "http://192.168.43.29:8080/api/v1/delete_order"
+		URL = "http://192.168.43.219:8080/api/v1/delete_order"
 		
 	exec_ack = requests.post(URL, data = json.dumps(order_data), headers = headers).json()
 	
@@ -74,7 +75,8 @@ def send_to_exec_link(new_order, new_order_id, content_type):							## send to e
 
 def send_to_trade_post(order, fill, fill_list):				## send to trade post
 	# initialize the REST API endpoint URL
-	URL_FOR_ORDER_FILL = "http://localhost:5002/trade_post_REST_API_dummy"
+	#URL_FOR_ORDER_FILL = "http://localhost:5002/trade_post_REST_API_dummy"
+	URL_FOR_ORDER_FILL = "http://192.168.43.171:5001/orderGet"
 	headers = {'Content-Type' : 'application/json'}
 
 	order_fill_data = {'order_id': str(order['_id']), 'user_id': order['user_id'], 
@@ -82,7 +84,7 @@ def send_to_trade_post(order, fill, fill_list):				## send to trade post
 				'ask_price': order['ask_price'], 'total_qty' : order['total_qty'], 
 				'order_stamp' : order['order_stamp'], 'state' : order['state'],
 				'fill' : fill,
-				'account' : order['account'] }
+				'account' : order['account'], 'LTP' : order['LTP'] }
 
 	# submit the request
 	r = requests.post(URL_FOR_ORDER_FILL, data = json.dumps(order_fill_data), headers = headers).json()
@@ -541,7 +543,7 @@ def execution_links():
 			objId = ObjectId(order_id)
 			
 			if order_status == '1' or order_status == '2':			# Partially filled / Filled
-				price = content['price']
+				price = content['LastPx']
 				qtydone = content['CumQty']
 				LTP = price		# Latest traded price
 				
