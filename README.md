@@ -18,6 +18,7 @@ Functionalities like storing user subscriptions to particular orders in cache an
 You need to install [Flask](http://flask.pocoo.org/) and [requests](http://docs.python-requests.org/en/master/):
 ```
 $ pip install flask gevent requests
+$ pip install -U flask-cors
 ```
 
 ## Starting the Flask server

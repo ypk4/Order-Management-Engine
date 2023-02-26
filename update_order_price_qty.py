@@ -22,4 +22,4 @@ if r["success"]:
 # otherwise, the request failed
 else:
 	print ("Request failed")
-	print r
+	print (r)

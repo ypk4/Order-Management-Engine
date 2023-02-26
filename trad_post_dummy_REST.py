@@ -22,7 +22,7 @@ def trade_post_accept():
 		if flask.request.is_json:
 			content = flask.request.get_json()
 			print ("trade_post_REST_API_dummy")	
-			print content
+			print (content)
 			
 			ack["success"] = True
 

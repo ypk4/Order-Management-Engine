@@ -65,11 +65,11 @@ def send_to_exec_link(new_order, new_order_id, content_type):							## send to e
 
 	# ensure the request was sucessful
 	#if r["success"]:
-	#	print ('Request succeeded')
+	#	print('Request succeeded')
 		
 	# otherwise, the request failed
 	#else:
-	#	print ("Request failed")
+	#	print("Request failed")
 	return exec_ack
 
 
@@ -91,11 +91,11 @@ def send_to_trade_post(order, fill, fill_list):				## send to trade post
 
 	# ensure the request was sucessful
 	if r["success"]:
-		print ('Request succeeded')
+		print('Request succeeded')
 		
 	# otherwise, the request failed
 	else:
-		print ("Request failed")
+		print("Request failed")
 
 
 
@@ -113,7 +113,7 @@ def order_entry():
 	ack = {}
 	
 	if flask.request.method == "POST":
-		print 'POST ', 'Request ', flask.request, 'Data = ', flask.request.data, flask.request.json, flask.request.form
+		print('POST ', 'Request ', flask.request, 'Data = ', flask.request.data, flask.request.json, flask.request.form)
 		
 		#ack= {'suc':'232'}
 		#return flask.jsonify(ack)
@@ -123,9 +123,9 @@ def order_entry():
 		if True:
 			#content = flask.request.get_json()			# When we run with "Driver programs"
 			content = flask.request.form				# When we run with "GUI"
-			print "JSON content ", content
-			#print 'IP of sender : ', flask.request.remote_addr
-			#print flask.request.environ['REMOTE_ADDR']
+			print("JSON content ", content)
+			#print('IP of sender : ', flask.request.remote_addr
+			#print(flask.request.environ['REMOTE_ADDR']
 
 
 			if int(content['type']) == 1:				# Insert new order
@@ -138,7 +138,7 @@ def order_entry():
 				# state = 1 (pending), 2 (filled), 3 (cancelled), 4 (partially filled), 5 (rejected), -1 (live)
 				# order_id returned is of the type "ObjectId"
 				
-				print 'Order id = ', order_id
+				print('Order id = ', order_id)
 				
 				ack["order_id"] = str(order_id)
 				
@@ -148,7 +148,7 @@ def order_entry():
 
 				exec_ack = send_to_exec_link(new_order, order_id, int(content['type']))
 				
-				print exec_ack
+				print(exec_ack)
 				
 				if exec_ack['success']:
 					#mongo_order.update_one({'_id': order_id}, {'$set': {'state': 1} }, upsert=False)   # Live order
@@ -168,16 +168,16 @@ def order_entry():
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
 				existing = mongo_order.find_one({'_id' : objId})
-				print '< existing ', existing, ' >'
+				print('< existing ', existing, ' >')
 				
 				if existing == None:
-					print "Order does not exist"
+					print("Order does not exist")
 					ack['comment'] = 'Order does not exist'
 					return flask.jsonify(ack)
 					
 				# Check if the order has got some fill(s) - In that case, do not allow update
 				if existing['order_qtydone'] > 0:
-					print "Not allowed - Order has fills"
+					print("Not allowed - Order has fills")
 					ack['comment'] = "Not allowed - Order has fills"
 					return flask.jsonify(ack)
 			
@@ -192,14 +192,14 @@ def order_entry():
 			
 				if 'history' not in existing:				# Create history list and add old values
 					history.append(old_values)
-					print 'here'
+					print('here')
 				
 				else:							# Append old values to history list	
 					history = existing['history']
 					history.append(old_values)
-					print 'there'
+					print('there')
 					
-				print 'history ', history
+				print('history ', history)
 				
 				existing['history'] = history
 				existing['orig_cl_ord_id'] = order_id
@@ -207,7 +207,7 @@ def order_entry():
 				existing['total_qty'] = total_qty
 				existing['order_stamp'] = order_stamp
 								
-				print '--', existing, '--'
+				print('--', existing, '--')
 				
 
 				new_order_id = mongo_order.insert({ 'orig_cl_ord_id' : existing['orig_cl_ord_id'], 
@@ -228,7 +228,7 @@ def order_entry():
 				'counter_party' : existing['counter_party'], 
 				'history' : history })
 				
-				print 'NEW = ', new_order_id
+				print('NEW = ', new_order_id)
 				
 				mongo_order.delete_one({'_id': objId})
 				
@@ -258,16 +258,16 @@ def order_entry():
 				order_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 				
 				existing = mongo_order.find_one({'_id' : objId})
-				print '<', existing, '>'
+				print('<', existing, '>')
 				
 				if existing == None:
-					print "Order does not exist"
+					print("Order does not exist")
 					ack['comment'] = 'Order does not exist'
 					return flask.jsonify(ack)
 					
 				# Check if the order has got some fill(s) - In that case, do not allow cancellation
 				if existing['order_qtydone'] > 0:
-					print "Not allowed - Order has fills"
+					print("Not allowed - Order has fills")
 					ack['comment'] = "Not allowed - Order has fills"
 					return flask.jsonify(ack)
 							
@@ -293,7 +293,7 @@ def order_entry():
 				existing['order_stamp'] = order_stamp
 				existing['reason_cancellation'] = reason_cancellation
 				
-				print '--', existing, '--'
+				print('--', existing, '--')
 				
 
 				new_order_id = mongo_order.insert({ 'orig_cl_ord_id' : existing['orig_cl_ord_id'], 
@@ -314,7 +314,7 @@ def order_entry():
 				'counter_party' : existing['counter_party'], 
 				'history' : history })
 				
-				print 'NEW = ', new_order_id
+				print('NEW = ', new_order_id)
 				
 				mongo_order.delete_one({'_id': objId})
 				
@@ -390,7 +390,7 @@ def order_entry():
 						prod_type = prod['product_type']
 						order_table.append(prod_type)
 					except:
-						print "Product not in collection!"
+						print("Product not in collection!")
 					
 					order_table.append(order['ask_price'])
 					order_table.append(order['ask_price'])
@@ -441,71 +441,71 @@ def order_entry():
 				
 				
 			elif int(content['type']) == 5:
- 				print("type=5")
- 				symbols = content['symbols']
-  				ltps = {}
- 				clps = {}
- 				sps = {}
+				print("type=5")
+				symbols = content['symbols']
+				ltps = {}
+				clps = {}
+				sps = {}
  				
- 				for x in symbols:
- 					orders = [str(y['_id']) for y in  mongo_order.find({'product_id':x})]
- 					#print(orders)
- 					'''
- 					for i in orders:
- 						fill = mongo_fill.find({'order_id':i})
- 						if i == 0:
- 							fills =fill
- 						else:
- 							fills.union(fill)						
- 					for fill in fills:
- 						print(fills)'''
- 					fills = mongo_fill.find({'order_id':{"$in": orders}})
- 					new_fills = []
- 					for i in fills:
- 						#print(i)
- 						if i == 0:
- 							new_fills = i['fills']
- 						else:
- 							new_fills = new_fills + i['fills'] 
- 					mytuple = []
- 					for  j in new_fills:
- 						mytuple.append((j['exchange_stamp'].encode("utf-8").replace(" ",""),j['price']))
- 					today = datetime.date.today()
- 					yesterday = today -  datetime.timedelta(days=1) 
- 					today_string =  today.strftime('%Y-%m-%d') +'*'
- 					#yesterday_string = yesterday.strftime('%Y-%m-%d') +'*'
- 					mytuple.sort(key=lambda y:y[0])
- 					#y = re.compile(yesterday_string,re.UNICODE)
- 					t = re.compile(today_string,re.UNICODE)
- 					e_stamps  = [y[0] for y in mytuple]
- 					#print(e_stamps)
- 					today = [str(y) for y in list(filter(t.search,e_stamps))]
- 					#print(today)
- 					today = sorted(today)
- 					#print(today)
- 					#yesterday =[str(y) for y in list(filter(y.match,e_stamps))]
- 					#yesterday = sorted(yesterday,reverse = True)	
- 					ltp = mytuple[-1][1]
- 					ltps[x] = ltp
- 					#print("ltp",ltp)
- 					#yesterday.sort(reverse=True)
- 					#clp = list(filter(lambda y:y[0] == yesterday[0],mytuple))[0][1]
- 					#clps[x] = clp
- 					#print(mytuple)
- 					#print(today)
- 					#print("first",today[0])
- 					sp = list(filter(lambda y:y[0] ==today[0],mytuple))
- 					print(sp)
- 					sps[x] = sp[0][1]
+			for x in symbols:
+				orders = [str(y['_id']) for y in  mongo_order.find({'product_id':x})]
+				#print(orders)
+				'''
+				for i in orders:
+					fill = mongo_fill.find({'order_id':i})
+					if i == 0:
+						fills =fill
+					else:
+						fills.union(fill)						
+				for fill in fills:
+					print(fills)'''
+				fills = mongo_fill.find({'order_id':{"$in": orders}})
+				new_fills = []
+				for i in fills:
+					#print(i)
+					if i == 0:
+						new_fills = i['fills']
+					else:
+						new_fills = new_fills + i['fills']
+				mytuple = []
+				for  j in new_fills:
+					mytuple.append((j['exchange_stamp'].encode("utf-8").replace(" ",""),j['price']))
+				today = datetime.date.today()
+				yesterday = today -  datetime.timedelta(days=1)
+				today_string =  today.strftime('%Y-%m-%d') +'*'
+				#yesterday_string = yesterday.strftime('%Y-%m-%d') +'*'
+				mytuple.sort(key=lambda y:y[0])
+				#y = re.compile(yesterday_string,re.UNICODE)
+				t = re.compile(today_string,re.UNICODE)
+				e_stamps  = [y[0] for y in mytuple]
+				#print(e_stamps)
+				today = [str(y) for y in list(filter(t.search,e_stamps))]
+				#print(today)
+				today = sorted(today)
+				#print(today)
+				#yesterday =[str(y) for y in list(filter(y.match,e_stamps))]
+				#yesterday = sorted(yesterday,reverse = True)
+				ltp = mytuple[-1][1]
+				ltps[x] = ltp
+				#print("ltp",ltp)
+				#yesterday.sort(reverse=True)
+				#clp = list(filter(lambda y:y[0] == yesterday[0],mytuple))[0][1]
+				#clps[x] = clp
+				#print(mytuple)
+				#print(today)
+				#print("first",today[0])
+				sp = list(filter(lambda y:y[0] ==today[0],mytuple))
+				print(sp)
+				sps[x] = sp[0][1]
  					
- 				ack  = {'ltps':ltps,'sps':sps}
- 				response = flask.jsonify(ack)
- 				response.headers.add('Access-Control-Allow-Origin', '*')
- 				response.headers.add('Access-Control-Allow-Credentials', 'false')
- 				
- 				print(json.dumps(ack, sort_keys=True, indent=4))
- 				
- 				return response
+				ack  = {'ltps':ltps,'sps':sps}
+				response = flask.jsonify(ack)
+				response.headers.add('Access-Control-Allow-Origin', '*')
+				response.headers.add('Access-Control-Allow-Credentials', 'false')
+
+				print(json.dumps(ack, sort_keys=True, indent=4))
+
+				return response
 
 			#new_order = mongo_order.find_one({'order_id' : order_id_send})			## new/updated/canceled order
 			#send_to_exec_link(new_order, content['type'])				
@@ -525,15 +525,15 @@ def execution_links():
 	mongo_fill = mongo.db.fills
 	mongo_order = mongo.db.orders 								##
 	
-	print 'here'
+	print('here')
 	
 	if flask.request.method == "POST":
-		print 'From exec', flask.request.data
+		print('From exec', flask.request.data)
 		if flask.request.is_json:
-			content = flask.request.get_json()	
-			print 'Content ', content
-			#print flask.request.environ['REMOTE_ADDR']
-			#print 'IP of sender : ', flask.request.remote_addr
+			content = flask.request.get_json()
+			print('Content ', content)
+			#print(flask.request.environ['REMOTE_ADDR']
+			#print('IP of sender : ', flask.request.remote_addr
 			
 			ts = time.time()
 			exchange_stamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -550,7 +550,7 @@ def execution_links():
 				fill = {'price' : price, 'qtydone' : qtydone, 'exchange_id' : 'NSE', 'exchange_stamp' : exchange_stamp}
 				
 				existing = mongo_fill.find_one({'order_id' : order_id})
-				print '<', existing, '>'
+				print('<', existing, '>')
 			
 				if existing == None:	# If fills for this order_id do not exist, create new json with list of fills
 					mongo_fill.insert({ 'order_id' : order_id, 'fills' : [fill] })
@@ -569,7 +569,7 @@ def execution_links():
 				send_to_trade_post(order_send, fill, fill_list_send)				## send to trade post
 				
 			else:
-				print "Order status ", order_status
+				print("Order status ", order_status)
 				mongo_order.update_one( {'_id': objId}, {'$set': {'state': order_status} }, upsert=False )
 				
 			'''elif order_status == '0':		# New (Either Pending New to New OR Pending Replace to New)
@@ -584,16 +584,16 @@ def execution_links():
 			
 			'''
 			fill = content['fill']			
-			print fill
+			print(fill
 			
 			fill['exchange_stamp'] = exchange_stamp
-			print fill
+			print(fill
 			
 			LTP = fill['price']		# Latest traded price
 			qtydone = fill['qtydone']	
 
 			existing = mongo_fill.find_one({'order_id' : order_id})
-			print '<', existing, '>'
+			print('<', existing, '>'
 			
 			if existing == None:		# If fills for this order_id do not exist, create new json with list of fills
 				mongo_fill.insert({ 'order_id' : order_id, 'fills' : [fill] })
@@ -614,8 +614,8 @@ def execution_links():
 
 # if this is the main thread of execution first load the model and then start the server
 if __name__ == "__main__":
-	print(("* Flask starting server..."
-		"Please wait until server has fully started"))
+	print("* Flask starting server..."
+		"Please wait until server has fully started")
 	app.run(debug=True, host='0.0.0.0')
 
 

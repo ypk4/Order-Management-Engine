@@ -23,7 +23,7 @@ ack = requests.post(URL_FOR_ORDER, data = json.dumps(order_data), headers = head
 # ensure the request was sucessful
 if ack["success"]:
 	print ('Request succeeded')
-	print ack
+	print (ack)
 	
 # otherwise, the request failed
 else:
